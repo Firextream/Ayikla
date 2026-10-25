@@ -34,6 +34,8 @@ Seri/zoom etiketi ve işlem bildirimi 1,5 saniye sonra solar. Bilgi paneli soluk
 
 Tur sonunda sayılar, **2. tura geç** ve **02_edit klasörünü Explorer'da aç** düğmeleri görünür. Lightroom Classic'e `02_edit\` içeriğini kendin içe aktar. CR3'süz JPEG uyarı rozetiyle işlenir. Alt klasörler taranmaz; JPG/JPEG ve harf duyarsız CR3 eşlemesi desteklenir.
 
+`._*`, `Thumbs.db`, `desktop.ini`, `.DS_Store` ve Windows gizli/sistem dosyaları taramada yok sayılır; sayılmaz, gösterilmez, taşınmaz veya kopyalanmaz. Açılışta yok sayılanların sayısı küçük bir satırda görünür. Açılamayan gerçek JPEG'i yine Enter ile seçebilir, X ile eleyebilirsin; bu oturumda açılamayan dosyalar tur özetinde güncel yollarıyla listelenir.
+
 **Dosya güvenliği:** Fotoğraf silinmez, üzerine yazılmaz; `_red\` boşaltılmaz. Kaldırılan edit kopyaları `.ayikla_saklanan\` içine taşınır. Bu klasörü ve `ayikla_log.jsonl` günlüğünü sakla. İşlem önce günlüğe yazılır; yarıda kalırsa açılışta tamamlanır. **Yeniden dene** yarım işlemi tamamlar ve klasörü yeniden tarar; dışarıdan eklenen dosyalar için de bu düğmeyi kullan. Günlük yazma hatasında disk sorununu giderip uygulamayı yeniden aç.
 
 Son klasörler ve pencere ayarı ayrı, yalnızca sona eklenen `ayikla_settings.jsonl` dosyasında tutulur: exe yanında; Python ile çalıştırırken proje kökünde.
