@@ -1,0 +1,53 @@
+{
+  "label": "v1.1",
+  "python": "3.12.10",
+  "platform": "win32",
+  "display": "1440x960 @ DPR=1; Qt offscreen; fit mode; filmstrip default off",
+  "method": "fresh generated shoot per open; all JPEGs are 6000x4000 ~8 MB; application-cache-cold, OS cache uncontrolled; cached waits for preloading; includes forced paint",
+  "folder_open_to_first_paint": {
+    "median_ms": 245.72,
+    "p95_ms": 275.72,
+    "min_ms": 242.36,
+    "max_ms": 275.72,
+    "n": 3
+  },
+  "next_preloaded": {
+    "median_ms": 4.97,
+    "p95_ms": 7.81,
+    "min_ms": 4.53,
+    "max_ms": 7.81,
+    "n": 20
+  },
+  "next_uncached": {
+    "median_ms": 136.89,
+    "p95_ms": 214.09,
+    "min_ms": 128.11,
+    "max_ms": 214.09,
+    "n": 20
+  },
+  "snapshot": {
+    "median_ms": 0.0,
+    "p95_ms": 0.01,
+    "min_ms": 0.0,
+    "max_ms": 0.01,
+    "n": 20
+  },
+  "keep": {
+    "median_ms": 26.26,
+    "p95_ms": 32.24,
+    "min_ms": 18.89,
+    "max_ms": 32.24,
+    "n": 10
+  },
+  "navigation_memory": {
+    "rss_mib": 69.51,
+    "peak_rss_mib": 114.83,
+    "private_mib": 47.32
+  },
+  "zoom_memory": {
+    "rss_mib": 163.44,
+    "peak_rss_mib": 163.44,
+    "private_mib": 141.15
+  },
+  "cache_bytes": 106944480
+}

@@ -9,5 +9,6 @@
   },
   "package_bytes": 45325338,
   "exe_bytes": 45325338,
-  "method": "5 launches to first Qt paint; same offscreen backend; OS cache uncontrolled; no interpreter/source PATH"
+  "method": "5 launches to first Qt paint; same offscreen backend; OS cache uncontrolled; no interpreter/source PATH",
+  "extracted_runtime_bytes": 113054169
 }

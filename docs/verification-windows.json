@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "error": null,
+  "checks": [
+    "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
+    "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
+    "Keep, reject missing RAW, exact-path undo and action toasts",
+    "Edit copies, archive without deletion, undo unmark",
+    "Journal reopen, persistent undo and recent folder",
+    "End screen with kept/rejected/edit counts and round-two action"
+  ],
+  "elapsed_seconds": 1.55,
+  "directory": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\.tmp\\frozen-verification\\7837ac86b462\\smoke-ac7b085bc5a1",
+  "executable": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\dist\\Ayikla\\Ayikla.exe",
+  "bytes": 2587758,
+  "package_bytes": 65780453,
+  "sha256": "57e52a68e50d5e55627ec92e9256156ae75918aaae782b60b75f600b7e9b8e27",
+  "exit_code": 0,
+  "source_on_path": false,
+  "qt_backend": "windows",
+  "qt_modules": [
+    "Qt6Core.dll",
+    "Qt6Gui.dll",
+    "Qt6Widgets.dll"
+  ],
+  "qt_plugins": [
+    "qico.dll",
+    "qjpeg.dll",
+    "qoffscreen.dll",
+    "qwindows.dll"
+  ]
+}

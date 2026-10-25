@@ -1,26 +1,44 @@
-# Ayikla
+# Ayikla 1.1
 
 Canon RAW+JPEG çekimlerini iki turda ayıklar. **Windows x64 · Python 3.12 · PySide6.**
 
-**Başlat:** `dist\Ayikla.exe` dosyasına çift tıkla, **Çekim klasörü seç**. Python kurulumu gerekmez. Uygulama tam ekran açılır; F11 veya Esc ile pencereye dönülür.
+**Başlat:** `dist\Ayikla\Ayikla.exe`. Python kurulumu gerekmez. **Ayikla klasörünü içindeki `_internal\` ile birlikte taşı; exe tek başına çalışmaz.** Çekim klasörünü seç veya açılıştaki son beş klasörden birine tıkla. Pencere/tam ekran durumu hatırlanır.
+
+Masaüstü kısayolu için proje kökünde çalıştır (mevcut kısayolun üzerine yazmaz):
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisayolu.ps1"
+```
 
 | Tuş | İşlev |
 |---|---|
-| → / Enter | 1. tur: seç; JPG + eşleşen CR3 → `01_secilen\` |
+| → / Enter | 1. tur: seç; JPG + varsa CR3 → `01_secilen\` |
 | ← / X | 1. tur: ele; çift → `_red\` |
-| Boşluk / ↓ | Karar vermeden sonraki fotoğraf |
-| ↑ | Karar vermeden önceki fotoğraf |
-| Z | Son kararı geri al; uygulama kapandıktan sonra da çalışır |
+| Boşluk / ↓ | Karar vermeden sonraki kare; 2. turun sonunda özet |
+| ↑ | Karar vermeden önceki kare |
+| Z | Son kararı geri al; uygulama yeniden açılınca da çalışır |
 | M | 1. tur / 2. tur arasında geçiş |
-| E | 2. tur: JPG + varsa CR3 → `02_edit\` kopyala; tekrar E ile seçimi kaldır |
+| E | 2. tur: JPG + CR3'ü `02_edit\` içine kopyala; tekrar E ile seçimi kaldır |
+| F | %100 odak kontrolü / ekrana sığdır |
+| Sol tuşla sürükle | %100 görünümde kaydır |
+| I | Dosya adı, çekim saati, enstantane, diyafram, ISO, odak uzaklığı ve lens |
+| T | Film şeridini göster/gizle; küçük fotoğrafa tıklayarak git |
+| H / ? | Klavye yardımını göster/gizle |
 | Ctrl+O | Başka çekim klasörü aç |
-| F11 / Esc | Tam ekranı değiştir / pencereye dön |
+| F11 | Tam ekranı değiştir |
+| Esc | Önce yardımı, sonra yakınlaştırmayı kapat; ardından pencereye dön |
 
-`02_edit\` içeriğini Lightroom Classic'e içe aktar. 1. tur yalnızca henüz karar verilmemiş JPEG'leri, 2. tur `01_secilen\` içindekileri gösterir. CR3'süz JPEG de işlenir; sarı rozetle belirtilir. Alt klasörler taranmaz; `.JPG` ve `.JPEG` desteklenir. Eşleşme aynı klasörde, dosya gövde adına göre ve harf duyarsız yapılır.
+Film şeridi: **yeşil = seçilen, kırmızı = elenen, mor = edit seçimi**. Elenen kare yalnızca önizlenir; karar tuşları devre dışıdır. EXIF saatleri ardışık olarak en fazla 1 saniye aralıktaysa **Seri 2/5** ipucu görünür. EXIF yoksa alanlar “—” olur.
 
-**Dosya güvenliği:** Üzerine yazılmaz, hiçbir fotoğraf silinmez; `_red\` boşaltılmaz. E ile kaldırılan veya Z ile geri alınan düzenleme kopyaları `.ayikla_saklanan\` içinde saklanır. Bu klasör zamanla büyüyebilir. `ayikla_log.jsonl` kararları, tam dosya yollarını ve son bakılan kareyi tutar; taşımalar yarıda kalırsa bir sonraki açılışta tamamlanır. Günlüğü ve `.ayikla_saklanan\` klasörünü sakla. Hedef çakışması varsa dosyalar korunur; çakışmayı giderip **Yeniden dene** veya klasörü yeniden aç. Günlük yazma hatasında uygulamayı yeniden başlat.
+Seri/zoom etiketi ve işlem bildirimi 1,5 saniye sonra solar. Bilgi paneli soluklaşır; I veya fare hareketiyle yeniden belirginleşir. Yardım açık kalır. Normal görünüm ve küçük fotoğraflar ölçekli çözülür; tam çözünürlük yalnızca F ile yüklenir.
 
-Geliştirme (PowerShell, proje klasöründe):
+Tur sonunda sayılar, **2. tura geç** ve **02_edit klasörünü Explorer'da aç** düğmeleri görünür. Lightroom Classic'e `02_edit\` içeriğini kendin içe aktar. CR3'süz JPEG uyarı rozetiyle işlenir. Alt klasörler taranmaz; JPG/JPEG ve harf duyarsız CR3 eşlemesi desteklenir.
+
+**Dosya güvenliği:** Fotoğraf silinmez, üzerine yazılmaz; `_red\` boşaltılmaz. Kaldırılan edit kopyaları `.ayikla_saklanan\` içine taşınır. Bu klasörü ve `ayikla_log.jsonl` günlüğünü sakla. İşlem önce günlüğe yazılır; yarıda kalırsa açılışta tamamlanır. **Yeniden dene** yarım işlemi tamamlar ve klasörü yeniden tarar; dışarıdan eklenen dosyalar için de bu düğmeyi kullan. Günlük yazma hatasında disk sorununu giderip uygulamayı yeniden aç.
+
+Son klasörler ve pencere ayarı ayrı, yalnızca sona eklenen `ayikla_settings.jsonl` dosyasında tutulur: exe yanında; Python ile çalıştırırken proje kökünde.
+
+Geliştirme (PowerShell, proje kökünde):
 
 ```powershell
 py -3.12 -m venv .venv
@@ -31,6 +49,6 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe scripts\verify_frozen.py
 ```
 
-Bu bilgisayarda proje içindeki `.tools\python312\tools\python.exe` de hazırdır; `run.ps1` ve `build.ps1` bunu otomatik bulur. Build `dist\Ayikla.exe` üretir. Kaynak/testler yerel git deposundadır; remote yoktur.
+Bu bilgisayarda `.tools\python312\tools\python.exe` de hazırdır; betikler otomatik bulur. Build önce yeni bir klasör oluşturur; önceki paketi silmeden `.tmp\replaced-builds\` içine taşır ve taşınabilir ayarını yeni pakete kopyalar. Yerel git deposu, remote yok.
 
-Paket doğrulaması yalnızca `.tmp\` altında yeni, yapay çekim oluşturur; sonucu `docs\verification.json` içine yazar. Pillow yalnızca test görselleri ve EXIF örnekleri üretmek için kullanılır; uygulamaya dahil değildir.
+Ölçümleri tekrarlamak için `scripts\benchmark.py generate`, ardından `measure <etiket>` ve `startup <etiket> <exe-yolu>` kullan. Generate yalnızca proje içindeki `.tmp\benchmark\` altında yaklaşık 2,5 GB yapay veri üretir. [Ölçümler ve sınırlar](RAPOR.md).
