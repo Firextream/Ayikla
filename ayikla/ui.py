@@ -773,7 +773,7 @@ class MainWindow(QMainWindow):
         if self.canvas.help.isVisible():
             self.canvas.help.dismiss()
         else:
-            self.canvas.help.reveal(f"AYIKLA {__version__} · BETA\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
+            self.canvas.help.reveal(f"KLAVYE · AYIKLA {__version__} · BETA\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
                                     "← / X / Delete   Ele → _red (dosya silinmez)\n\n"
                                     "2. TUR · EDİT / LIGHTROOM\nE   02_edit içine kopyala / edit seçimini kaldır\n\n"
                                     "Kararlar otomatik kaydedilir.\n"
