@@ -41,6 +41,12 @@ QPushButton#keep:hover { background: #eeeeee; }
 QPushButton#reject { background: #272727; color: #cccccc; border-color: #494949;
                     min-width: 180px; padding: 14px; }
 QPushButton#reject:hover { background: #3b3b3b; }
+QPushButton#keep:disabled, QPushButton#reject:disabled, QPushButton#primary:disabled {
+    background: #292929; color: #606060; border: 1px solid #333333; }
+QScrollBar:horizontal { background: #252525; height: 8px; margin: 0; }
+QScrollBar::handle:horizontal { background: #555555; min-width: 28px; border-radius: 3px; }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: none; }
 QProgressBar { border: none; background: #303030; max-height: 3px; min-height: 3px; }
 QProgressBar::chunk { background: #d2d2d2; }
 QToolTip { color: #dddddd; background: #383838; border: 1px solid #777777; padding: 6px; }
@@ -433,6 +439,9 @@ class MainWindow(QMainWindow):
             else:
                 self.cache.clear()
                 self.filename.setText("1. tur tamamlandı" if self.mode == "cull" and snapshot.total else "Fotoğraf yok")
+                if self.summary_requested:
+                    self.filename.setText("2. tur özeti")
+                    self.counter.setText("Tur özeti")
                 self.raw_badge.hide()
                 self.edit_badge.hide()
                 if self.mode == "cull":

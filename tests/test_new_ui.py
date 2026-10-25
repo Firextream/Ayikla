@@ -177,6 +177,7 @@ def test_end_screen_counts_round_two_explorer_and_final_toast(app, window, shoot
     assert window.toast.text() == "Edit'e eklendi"
     window.navigate(1)
     assert window.viewer.currentIndex() == 1 and "1 düzenlemeye" in window.end_counts.text()
+    assert window.filename.text() == "2. tur özeti"
     window.return_to_photos()
     assert window.current.key == "img_0001"
 
