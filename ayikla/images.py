@@ -15,7 +15,7 @@ def read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple[
         # The scaled size refers to encoded pixels, before EXIF auto-rotation.
         rotated = bool(reader.transformation().value & 4)
         target = QSize(bounds.height(), bounds.width()) if rotated else bounds
-        scaled = size.scaled(target, Qt.AspectRatioMode.KeepAspectRatio)
+        scaled = size.scaled(target.boundedTo(QSize(3200, 3200)), Qt.AspectRatioMode.KeepAspectRatio)
         if scaled.width() < size.width() or scaled.height() < size.height():
             reader.setScaledSize(scaled)
         # Qt's JPEG handler uses reduced DCT decoding for scaled reads.

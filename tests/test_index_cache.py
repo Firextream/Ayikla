@@ -81,6 +81,14 @@ def test_scaled_portrait_respects_display_bounds(tmp_path):
     assert image.size() == QSize(200, 300)
 
 
+def test_fit_decode_stays_scaled_on_oversized_displays(tmp_path):
+    path = tmp_path / "large.jpg"
+    Image.new("RGB", (4000, 2500), "gray").save(path)
+    image, error = read_image(path, QSize(8000, 5000))
+    assert not error
+    assert image.size() == QSize(3200, 2000)
+
+
 def test_cache_eviction_is_bytes_not_count():
     cache = ImageCache(byte_limit=3000)
     image = QImage(10, 10, QImage.Format.Format_RGB32)

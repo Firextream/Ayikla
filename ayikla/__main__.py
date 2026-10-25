@@ -14,7 +14,7 @@ def main() -> int:
     window = MainWindow()
     from .probe import install_probe
     install_probe(window)
-    window.showFullScreen()
+    window.show_saved_state()
     if smoke_output:
         from .smoke import run_smoke
         QTimer.singleShot(0, lambda: run_smoke(app, window, smoke_output))
