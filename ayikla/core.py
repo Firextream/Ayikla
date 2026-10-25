@@ -27,6 +27,8 @@ REJECTED = "_red"
 ARCHIVE = ".ayikla_saklanan"
 LOG = "ayikla_log.jsonl"
 VERSION = 1
+RAW_EXTENSIONS = frozenset({".cr3", ".cr2", ".crw", ".raf", ".arw", ".srf", ".sr2",
+                            ".orf", ".nef", ".nrw", ".rw2", ".rwl", ".pef", ".dng", ".srw"})
 
 
 class AyiklaError(Exception):
@@ -88,7 +90,7 @@ def ignored_file_reason(path: Path) -> str | None:
 
 def pair_photos(folder: Path, state: str = "pending", *,
                 ignored: dict[str, int] | None = None) -> tuple[Photo, ...]:
-    """Pair immediate JPEG/CR3 children by case-insensitive stem, never recurse."""
+    """Pair immediate JPEG/RAW children by case-insensitive stem, never recurse."""
     if not folder.exists():
         return ()
     if is_link(folder) or not folder.is_dir():
@@ -101,14 +103,14 @@ def pair_photos(folder: Path, state: str = "pending", *,
                 ignored[reason] = ignored.get(reason, 0) + 1
             continue
         extension = path.suffix.casefold()
-        if extension not in {".jpg", ".jpeg", ".cr3"}:
+        if extension not in RAW_EXTENSIONS | {".jpg", ".jpeg"}:
             continue
         if is_link(path):
             raise ConflictError(f"Linked photos cannot be processed: {path.name}")
         if not path.is_file():
             continue
         group = groups.setdefault(path.stem.casefold(), {"jpeg": [], "raw": []})
-        group["raw" if extension == ".cr3" else "jpeg"].append(path)
+        group["raw" if extension in RAW_EXTENSIONS else "jpeg"].append(path)
     photos = []
     for key, group in groups.items():
         if not group["jpeg"]:
@@ -381,7 +383,7 @@ class ShootSession:
                 state = "pending" if action == "undo" else ("kept" if action == "keep" else "rejected")
                 paths = [self._path(op["dst"]) for op in tx["ops"]]
                 jpeg = next(path for path in paths if path.suffix.casefold() in {".jpg", ".jpeg"})
-                raw = next((path for path in paths if path.suffix.casefold() == ".cr3"), None)
+                raw = next((path for path in paths if path.suffix.casefold() in RAW_EXTENSIONS), None)
                 self._photos[key] = Photo(key, jpeg, raw, state)
                 self._snapshot = None
 
@@ -553,9 +555,13 @@ class ShootSession:
         current = self._photos.get(photo.key)
         if current is None or current != photo or current.state != "pending":
             raise ConflictError("This photo is no longer in the shoot root. Reopen the folder.")
-        raw_candidate = photo.jpeg.with_suffix(".CR3")
-        if photo.raw is None and raw_candidate.is_file() and not ignored_file_reason(raw_candidate):
-            raise ConflictError("A new CR3 was found. Press Retry to rescan, then make the decision again.")
+        for extension in RAW_EXTENSIONS:
+            candidate = photo.jpeg.with_suffix(extension.upper())
+            if photo.raw and candidate.name.casefold() == photo.raw.name.casefold():
+                continue
+            if candidate.is_file() and not ignored_file_reason(candidate):
+                raise ConflictError(f"A new {extension[1:].upper()} RAW partner was found. "
+                                    "Press Retry to rescan, then make the decision again.")
         target = self.root / (KEPT if keep else REJECTED)
         operations = [self._move_op(path, target / path.name) for path in photo.files]
         self._transaction("keep" if keep else "reject", photo.key, operations,

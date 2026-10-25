@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from ayikla import __version__
-from ayikla.core import is_link
+from ayikla.core import is_link, RAW_EXTENSIONS
 
 
 def package(root: Path, filename: str | None = None) -> Path:
@@ -39,7 +39,7 @@ def package(root: Path, filename: str | None = None) -> Path:
     private_names = {"ayikla_settings.jsonl", "ayikla_log.jsonl", ".ayikla.lock"}
     for path in sorted(runtime.rglob("*")):
         checked(path)
-        if path.name.casefold() in private_names or path.suffix.casefold() in {".jpg", ".jpeg", ".cr3"}:
+        if path.name.casefold() in private_names or path.suffix.casefold() in RAW_EXTENSIONS | {".jpg", ".jpeg"}:
             raise ValueError("Unexpected private data in the built runtime")
         if path.is_file():
             inputs.append((path, "Ayikla/" + path.relative_to(bundle).as_posix()))
