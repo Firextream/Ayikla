@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
 from . import __version__
 from .core import EDIT, KEPT, REJECTED, AyiklaError, Photo, ShootSession
 from .images import ImageCache
+from .color_browser import ColorBrowser
 from .metadata import burst_hints, read_metadata
 from .preferences import Preferences
 from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
@@ -133,6 +134,8 @@ class MainWindow(QMainWindow):
         self.preview_photo = None
         self.summary_requested = False
         self.decode_failures: set[str] = set()
+        self.color_profiles = {}
+        self.color_browser = None
         self.metadata = {}
         self.bursts = {}
         self._metadata_task = None
@@ -218,7 +221,7 @@ class MainWindow(QMainWindow):
         intro.addWidget(label("PHOTO CULLING  /  TWO ROUNDS", "eyebrow"))
         intro.addWidget(label("Find your best frames.\nBuild your shortlist.", "hero"))
         description = label("Open your shoot. Choose what to keep, then what to edit\n"
-                            "in Lightroom. JPG and CR3 stay together.", "muted")
+                            "in Lightroom. JPG and RAW stay together.", "muted")
         description.setWordWrap(True)
         description.setStyleSheet("font-size: 14px;")
         intro.addWidget(description)
@@ -260,6 +263,9 @@ class MainWindow(QMainWindow):
             control.setCheckable(True)
             control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
             toolbar.addWidget(control)
+        self.colors_button = button("Color ideas  ·  C", self.open_colors)
+        self.colors_button.hide()
+        toolbar.addWidget(self.colors_button)
         toolbar.addStretch()
         self.counter = label("", "counter")
         toolbar.addWidget(self.counter)
@@ -364,7 +370,7 @@ class MainWindow(QMainWindow):
         actions.setContentsMargins(8, 7, 8, 7)
         actions.setSpacing(6)
         self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
-        self.reject_button.setToolTip("Moves JPG + matching CR3 to _red. Z to undo; no files are deleted.")
+        self.reject_button.setToolTip("Moves JPG + matching RAW to _red. Z to undo; no files are deleted.")
         actions.addWidget(self.reject_button)
         actions.addStretch()
         self.previous_button = button("↑  Previous", lambda: self.navigate(-1), "ghost")
@@ -374,10 +380,10 @@ class MainWindow(QMainWindow):
         actions.addWidget(self.next_button)
         actions.addStretch()
         self.keep_button = button("Keep  ·  → / Enter", lambda: self.decide(True), "keep")
-        self.keep_button.setToolTip("Moves JPG + matching CR3 to 01_secilen for keeping.")
+        self.keep_button.setToolTip("Moves JPG + matching RAW to 01_secilen for keeping.")
         actions.addWidget(self.keep_button)
         self.mark_button = button("Pick for editing  ·  E", self.toggle_edit, "keep")
-        self.mark_button.setToolTip("Copies JPG + matching CR3 to 02_edit for Lightroom.")
+        self.mark_button.setToolTip("Copies JPG + matching RAW to 02_edit for Lightroom.")
         actions.addWidget(self.mark_button)
         self.summary_button = button("Round summary", self.show_summary)
         actions.addWidget(self.summary_button)
@@ -551,7 +557,7 @@ class MainWindow(QMainWindow):
                 self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} kept  ·  {len(snapshot.rejected)} rejected")
                 self.remaining.setText(f"{len(snapshot.pending)} undecided")
             else:
-                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy JPG + matching CR3 to 02_edit · "
+                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy JPG + matching RAW to 02_edit · "
                                         "E again: remove edit pick · Decisions are saved automatically.")
                 position = self.index + 1 if self.photos else 0
                 self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} picked for editing")
@@ -564,7 +570,7 @@ class MainWindow(QMainWindow):
             self.canvas.image = QImage()
             if photo:
                 self.filename.setText(photo.jpeg.name)
-                self.raw_badge.setText("JPG + CR3" if photo.raw else "⚠ No matching CR3")
+                self.raw_badge.setText(f"JPG + {photo.raw.suffix[1:].upper()}" if photo.raw else "⚠ No matching RAW")
                 self.raw_badge.setStyleSheet("" if photo.raw else "color: #cccccc; background: #303030;")
                 self.raw_badge.show()
                 self.edit_badge.setVisible(photo.key in self.session.edits)
@@ -646,6 +652,8 @@ class MainWindow(QMainWindow):
             control.setEnabled(has_photo and self.preview_photo is None)
         for control in (self.zoom_button, self.info_button):
             control.setEnabled(has_photo)
+        self.colors_button.setVisible(self.mode == "edit")
+        self.colors_button.setEnabled(enabled and bool(self.session.snapshot().kept))
         self.strip_button.setEnabled(enabled)
         self.folders_button.setEnabled(self.session is not None and not self.busy)
         self.current_folder_button.setEnabled(has_photo)
@@ -778,7 +786,7 @@ class MainWindow(QMainWindow):
                                     "ROUND 2 · EDIT / LIGHTROOM\nE   copy to 02_edit / remove edit pick\n\n"
                                     "Decisions are saved automatically.\n"
                                     "Space / ↓   Next     ↑   Previous\nZ   Undo     M   Switch round\n"
-                                    "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip\n"
+                                    "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip     C   Color ideas (round 2)\n"
                                     "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder",
                                     auto_fade=False)
             self.canvas.position_overlays()
@@ -846,6 +854,24 @@ class MainWindow(QMainWindow):
         self.summary_requested = False
         self.refresh(rescan=False)
 
+    def open_colors(self):
+        if not self.session or self.busy or self.mode != "edit" or self.session.pending_id or self.session.faulted:
+            return
+        photos = self.session.snapshot().kept
+        if not photos:
+            return
+        if self.color_browser is not None:
+            self.color_browser.deleteLater()
+        reference = self.current.key if self.current else None
+        self.color_browser = ColorBrowser(photos, reference, self.color_profiles, self)
+        self.color_browser.activated.connect(self.jump_to)
+        self.color_browser.analyzed.connect(self._colors_analyzed)
+        self.color_browser.open()
+
+    def _colors_analyzed(self, failures):
+        self.decode_failures.update(failures)
+        self._update_decode_summary()
+
     def open_edit_folder(self):
         self.open_shoot_folder(EDIT)
 
@@ -898,6 +924,8 @@ class MainWindow(QMainWindow):
             self.toggle_zoom()
         elif key == Qt.Key.Key_I:
             self.toggle_info()
+        elif key == Qt.Key.Key_C:
+            self.open_colors()
         elif key == Qt.Key.Key_T:
             self.toggle_filmstrip()
         elif key in (Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Space):
@@ -916,6 +944,8 @@ class MainWindow(QMainWindow):
             self.feedback.setText("A file operation is running. Close the window once it finishes.")
             event.ignore()
             return
+        if self.color_browser is not None:
+            self.color_browser.reject()
         self.cache.close()
         self.filmstrip.cache.close()
         self._metadata_pool.waitForDone()

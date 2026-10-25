@@ -95,7 +95,7 @@ def test_complete_keyboard_flow_and_resume(app, shoot):
         assert window.current.key == "img_1"
         QTest.keyClick(window, Qt.Key.Key_Space)
         assert window.current.key == "img_2"
-        assert "No matching CR3" in window.raw_badge.text()
+        assert "No matching RAW" in window.raw_badge.text()
         QTest.keyClick(window, Qt.Key.Key_Up)
         QTest.keyClick(window, Qt.Key.Key_Return)
         wait_until(app, lambda: not window.busy)
