@@ -502,4 +502,3 @@ class ShootSession:
         self._transaction("undo", target["key"], operations, target["view_before"],
                           transaction_id, undo_of=target_id)
         return True
-

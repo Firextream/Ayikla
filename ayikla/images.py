@@ -107,4 +107,3 @@ class ImageCache(QObject):
     def close(self) -> None:
         self.pool.clear()
         self.pool.waitForDone()
-

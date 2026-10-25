@@ -146,4 +146,3 @@ def test_empty_folder_and_finished_round(app, shoot):
     finally:
         window.close()
         app.processEvents()
-

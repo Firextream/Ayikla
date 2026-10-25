@@ -140,4 +140,3 @@ def run_smoke(app, window, output: str) -> None:
     timer.timeout.connect(tick)
     timer.start()
     window._smoke_timer = timer
-

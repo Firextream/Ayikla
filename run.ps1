@@ -10,4 +10,3 @@ if (-not (Test-Path -LiteralPath $pythonPath)) {
 $env:PYTHONNOUSERSITE = '1'
 & $pythonPath -m ayikla @args
 exit $LASTEXITCODE
-

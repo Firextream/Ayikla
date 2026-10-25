@@ -17,4 +17,3 @@ if ($LASTEXITCODE -ne 0) { throw 'Simge üretilemedi.' }
 & $pythonPath -m PyInstaller --noconfirm Ayikla.spec
 if ($LASTEXITCODE -ne 0) { throw 'Paketleme başarısız.' }
 Get-Item -LiteralPath 'dist\Ayikla.exe' | Select-Object FullName,Length
-

@@ -44,4 +44,3 @@ for source, target in (("gallery.png", "arayuz.png"), ("welcome.png", "baslangic
         shutil.copyfile(image, docs / target)
 print(json.dumps(result, ensure_ascii=True, indent=2))
 sys.exit(0 if result["ok"] and process.returncode == 0 else 1)
-

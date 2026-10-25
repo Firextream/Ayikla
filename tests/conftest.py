@@ -21,4 +21,3 @@ def make_pair():
         if raw:
             (folder / f"{stem}.CR3").write_bytes(b"dummy raw " + stem.encode())
     return make
-

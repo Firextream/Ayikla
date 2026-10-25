@@ -443,4 +443,3 @@ def test_json_null_in_journal_is_invalid_not_a_torn_fragment(shoot):
     (shoot / LOG).write_text('null\n', encoding='utf-8')
     with pytest.raises(RecoveryError):
         ShootSession(shoot)
-

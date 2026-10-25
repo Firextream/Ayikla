@@ -484,4 +484,3 @@ class MainWindow(QMainWindow):
         if self.session:
             self.session.close()
         event.accept()
-

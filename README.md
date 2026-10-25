@@ -34,4 +34,3 @@ py -3.12 -m venv .venv
 Bu bilgisayarda proje içindeki `.tools\python312\tools\python.exe` de hazırdır; `run.ps1` ve `build.ps1` bunu otomatik bulur. Build `dist\Ayikla.exe` üretir. Kaynak/testler yerel git deposundadır; remote yoktur.
 
 Paket doğrulaması yalnızca `.tmp\` altında yeni, yapay çekim oluşturur; sonucu `docs\verification.json` içine yazar. Pillow yalnızca test görselleri ve EXIF örnekleri üretmek için kullanılır; uygulamaya dahil değildir.
-

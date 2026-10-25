@@ -26,4 +26,3 @@ exe = EXE(
     strip=False, upx=False, console=False, disable_windowed_traceback=False,
     icon='assets/ayikla.ico', version='assets/version_info.txt',
 )
-

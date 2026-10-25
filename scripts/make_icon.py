@@ -10,4 +10,3 @@ path = Path(__file__).resolve().parents[1] / "assets" / "ayikla.ico"
 path.parent.mkdir(exist_ok=True)
 if not app_icon().pixmap(128, 128).save(str(path), "ICO"):
     raise SystemExit("Could not create icon")
-
