@@ -7,6 +7,11 @@ import pytest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
+@pytest.fixture(autouse=True)
+def isolated_preferences(tmp_path, monkeypatch):
+    monkeypatch.setenv("AYIKLA_STATE_DIR", str(tmp_path / "preferences"))
+
+
 @pytest.fixture
 def shoot(tmp_path: Path) -> Path:
     folder = tmp_path / "Çekim 2026"
