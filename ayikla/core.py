@@ -11,6 +11,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import sys
 import uuid
 from dataclasses import dataclass
@@ -72,7 +73,21 @@ def is_link(path: Path) -> bool:
     return path.is_symlink() or path.is_junction()
 
 
-def pair_photos(folder: Path, state: str = "pending") -> tuple[Photo, ...]:
+def ignored_file_reason(path: Path) -> str | None:
+    """Exclude metadata and Windows hidden/system files before pairing."""
+    name = path.name.casefold()
+    if name.startswith("._"):
+        return "appledouble"
+    if name in {"thumbs.db", "desktop.ini", ".ds_store"}:
+        return "metadata"
+    attributes = getattr(path.stat(), "st_file_attributes", 0)
+    if attributes & (stat.FILE_ATTRIBUTE_HIDDEN | stat.FILE_ATTRIBUTE_SYSTEM):
+        return "hidden_system"
+    return None
+
+
+def pair_photos(folder: Path, state: str = "pending", *,
+                ignored: dict[str, int] | None = None) -> tuple[Photo, ...]:
     """Pair immediate JPEG/CR3 children by case-insensitive stem, never recurse."""
     if not folder.exists():
         return ()
@@ -80,6 +95,11 @@ def pair_photos(folder: Path, state: str = "pending") -> tuple[Photo, ...]:
         raise ConflictError(f"Normal bir klasör gerekli: {folder}")
     groups: dict[str, dict[str, list[Path]]] = {}
     for path in folder.iterdir():
+        reason = ignored_file_reason(path)
+        if reason:
+            if ignored is not None and path.is_file():
+                ignored[reason] = ignored.get(reason, 0) + 1
+            continue
         extension = path.suffix.casefold()
         if extension not in {".jpg", ".jpeg", ".cr3"}:
             continue
@@ -165,6 +185,7 @@ class ShootSession:
         self._photos: dict[str, Photo] | None = None
         self._order: tuple[str, ...] = ()
         self._snapshot: Snapshot | None = None
+        self.ignored_files: dict[str, int] = {}
         try:
             for name in (KEPT, EDIT, REJECTED, ARCHIVE, LOG, ".ayikla.lock"):
                 self._path(name)
@@ -366,8 +387,10 @@ class ShootSession:
 
     def rescan(self) -> Snapshot:
         """Explicit refresh on open, Retry or conflict; publish only a valid scan."""
-        result = Snapshot(pair_photos(self.root), pair_photos(self.root / KEPT, "kept"),
-                          pair_photos(self.root / REJECTED, "rejected"))
+        ignored: dict[str, int] = {}
+        result = Snapshot(pair_photos(self.root, ignored=ignored),
+                          pair_photos(self.root / KEPT, "kept", ignored=ignored),
+                          pair_photos(self.root / REJECTED, "rejected", ignored=ignored))
         seen: set[str] = set()
         for photo in (*result.pending, *result.kept, *result.rejected):
             if photo.key in seen:
@@ -377,7 +400,17 @@ class ShootSession:
         self._photos = {photo.key: photo for photo in photos}
         self._order = tuple(photo.key for photo in sorted(photos, key=lambda item: natural_key(item.jpeg.name)))
         self._snapshot = result
+        self.ignored_files = ignored
         return result
+
+    @property
+    def ignored_notice(self) -> str:
+        parts = []
+        if count := self.ignored_files.get("appledouble", 0):
+            parts.append(f"{count} macOS yardımcı dosyası (._) yok sayıldı")
+        if count := sum(value for reason, value in self.ignored_files.items() if reason != "appledouble"):
+            parts.append(f"{count} gizli/sistem veya yardımcı dosya yok sayıldı")
+        return " · ".join(parts)
 
     def snapshot(self) -> Snapshot:
         """Immutable in-memory view. No directory enumeration or filesystem reads."""
@@ -419,6 +452,9 @@ class ShootSession:
         destinations: set[str] = set()
         for op in operations:
             source, target = self._path(op["src"]), self._path(op["dst"])
+            if ignored_file_reason(source):
+                raise ConflictError(f"Gizli/sistem veya yardımcı dosya işlenmez: {source.name}. "
+                                    "Yeniden dene ile klasörü tara.")
             if not same_file(source, op["fingerprint"]):
                 raise ConflictError(f"Kaynak dosya değişmiş veya kayıp: {source.name}")
             if self._existing(target) is not None:
@@ -448,6 +484,8 @@ class ShootSession:
         source, target = self._path(operation["src"]), self._path(operation["dst"])
         existing = self._existing(target)
         if source.exists():
+            if ignored_file_reason(source):
+                raise ConflictError(f"Gizli/sistem veya yardımcı dosya taşınmaz: {source.name}")
             if existing is not None:
                 raise ConflictError(f"Hedef zaten var: {operation['dst']}")
             if not same_file(source, operation["fingerprint"]):
@@ -462,6 +500,8 @@ class ShootSession:
         stage = self._path(operation["stage"])
         receipt = self.receipts[transaction_id].get(index)
         if receipt is None:
+            if ignored_file_reason(source):
+                raise ConflictError(f"Gizli/sistem veya yardımcı dosya kopyalanmaz: {source.name}")
             if self._existing(target) is not None:
                 raise ConflictError(f"Kopya hedefi zaten var: {operation['dst']}")
             if not same_file(source, operation["fingerprint"]):
@@ -513,7 +553,8 @@ class ShootSession:
         current = self._photos.get(photo.key)
         if current is None or current != photo or current.state != "pending":
             raise ConflictError("Fotoğraf artık başlangıç klasöründe değil. Klasörü yeniden aç.")
-        if photo.raw is None and photo.jpeg.with_suffix(".CR3").exists():
+        raw_candidate = photo.jpeg.with_suffix(".CR3")
+        if photo.raw is None and raw_candidate.is_file() and not ignored_file_reason(raw_candidate):
             raise ConflictError("Yeni bir CR3 bulundu. Yeniden dene ile klasörü tara ve kararını tekrar ver.")
         target = self.root / (KEPT if keep else REJECTED)
         operations = [self._move_op(path, target / path.name) for path in photo.files]
