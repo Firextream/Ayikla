@@ -4,16 +4,24 @@
 
 **Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Yerel git deposu, remote yok.
 
+## Delete tuşu ve saklama / edit ayrımı
+
+**110 test geçti: önceki 104 + 6 yeni test.** 1. turda **Delete = Ele**: JPG ve varsa CR3 `_red\` içine taşınır; Z tam yollarına geri getirir. Kalıcı silme eklenmedi. Bozuk JPEG, CR3'süz kare ve hedef çakışması denendi; hedefteki dosya korunuyor. 2. turda Delete işlem yapmıyor.
+
+Galeri düğmeleri **1 Sakla / Ele** ve **2 Edit / Lightroom** olarak adlandırıldı. İlk turda **Sakla → 01_secilen** ile saklanacak kareler ayrılır. İkinci turda **E → 02_edit** ile Lightroom için kopyalar oluşturulur. Her turda amaç ve hedef klasör sabit bilgi satırında görünür. Kararlar otomatik günlüğe yazılır; ayrıca Kaydet işlemi yoktur. Açılış açıklaması, yardım ve README tuş tablosu güncellendi.
+
+**Yeni exe offscreen ve Windows Qt eklentisiyle geçti; Delete ve iki turun etiketleri paket içinde de doğrulandı.** Exe **2.592.106 bayt**, paket **65.784.954 bayt**. SHA-256: `548a814c8f9fd915a133f3feed9e5e3033a28f5e9c103ca86fe6acab18b7fe9d`. Güncel kayıtlar: [pytest](docs/test-results.xml), [exe](docs/verification.json), [Windows](docs/verification-windows.json). Ekran görüntüleri de yeni paketten yenilendi. Performans benchmark'ı tekrarlanmadı.
+
 ## R50 kartındaki yardımcı dosyalar — hata düzeltmesi
 
-**104 pytest testi geçti: mevcut 81 test + 23 yeni regresyon testi.** Yalnızca Ayikla proje klasöründe çalışıldı; gerçek kart veya fotoğraf kullanılmadı.
+**Bu düzeltmenin tesliminde 104 pytest testi geçti: mevcut 81 test + 23 yeni regresyon testi.** Yalnızca Ayikla proje klasöründe çalışıldı; gerçek kart veya fotoğraf kullanılmadı.
 
 - Eşleştirmeden önce `._*`, `Thumbs.db`, `desktop.ini`, `.DS_Store` harf duyarsız olarak; Windows gizli/sistem dosyaları da gerçek dosya öznitelikleriyle süzülüyor. Başlangıç, `01_secilen` ve `_red` taramalarında aynı filtre var. Dosyalar korunuyor; indekse, sayaca, galeriye, film şeridine veya kopyalama/taşıma işlemlerine girmiyor.
 - **2.180 yapay girdi:** 545 gerçek JPG+CR3 çifti ve 545 AppleDouble çifti → **545 fotoğraf, 1.090 yok sayılan yardımcı dosya**. Açılışta tek sakin satır: “1090 macOS yardımcı dosyası (._) yok sayıldı”. Gerçek CR3 eşleşmesi ve CR3'süz JPEG davranışı doğrulandı.
 - Bozuk gerçek JPEG hata kartında kalıyor; Enter/X ile seçme/eleme ve Z ile tam yola geri alma çalışıyor. Tur özetindeki kaydırılabilir listede **bu oturumda görüntülenirken açılamayan JPEG'ler**, taşınmışsa yeni yollarıyla gösteriliyor. Başarılı yeniden okumada hata kaydı kalkıyor; yeniden açılışta bu görüntüleme listesi yeniden oluşur. Karar günlüğü ve kalıcı undo akışı korunuyor.
 - Karışık klasör, gizli/sistem JPG ve CR3, edit kopyaları, yeniden açılış, dosya içeriklerinin korunması ve taramadan sonra gizlenen kaynağın işlenmemesi test edildi. Önce günlük, silmeme ve üzerine yazmama kuralları korunuyor.
 
-**Yeni onedir paket oluşturuldu ve hem offscreen hem Windows Qt eklentisiyle geçti.** Exe içindeki test de yardımcı dosyalar yanında gerçek eşlemeyi; bozuk JPEG için ele → geri al → seç → tur özeti akışını doğruladı. Exe: **2.591.479 bayt**; paket: **65.784.327 bayt**. SHA-256: `55b8b175a6a9fb32508985d3571de6d48e65b98d143084e4e5c4f575e568ba27`. [Pytest kaydı](docs/test-results.xml), [exe testi](docs/verification.json), [Windows testi](docs/verification-windows.json), [hata kartı](docs/corrupt.png), [hatalı dosyalar özeti](docs/corrupt-summary.png).
+**Bu düzeltmedeki onedir paket hem offscreen hem Windows Qt eklentisiyle geçti.** Exe içindeki test de yardımcı dosyalar yanında gerçek eşlemeyi; bozuk JPEG için ele → geri al → seç → tur özeti akışını doğruladı. O teslimde exe **2.591.479 bayt**, paket **65.784.327 bayttı**; güncel paket bilgisi yukarıdadır. [Pytest kaydı](docs/test-results.xml), [exe testi](docs/verification.json), [Windows testi](docs/verification-windows.json), [hata kartı](docs/corrupt.png), [hatalı dosyalar özeti](docs/corrupt-summary.png).
 
 Bu düzeltmede performans benchmark'ı tekrarlanmadı; aşağıdaki V1/V1.1 ölçümleri önceki sürüm karşılaştırmasıdır. Başka özellik eklenmedi.
 
@@ -58,3 +66,5 @@ Gerçek R50 çekimi, SD kart/harici disk hızı, monitör renk doğruluğu ve Li
 **Uygulanmadı:** Yıldız, XMP, bulanıklık tespiti, film taraması, sunucu arşivi ve seri gruplama arayüzü.
 
 **Ek öneriler (yalnızca öneri):** Gerçek bir R50 çekimiyle kısa kabul testi; ICC/renk yönetimini kalibre monitörde kontrol; yüksek DPI/ikinci monitör testi; uzun gerçek çekimde bağımsız yedek ve günlük büyümesi denemesi.
+
+**Kullanım için öneriler (uygulanmadı):** Benzer iki kareyi yan yana karşılaştırma; edit seçiminde E'den sonra isteğe bağlı otomatik sonraki kare. Önceliğim yan yana karşılaştırma: benzer karelerde ifade ve odak farkını görmeyi kolaylaştırır.

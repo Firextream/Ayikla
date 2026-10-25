@@ -12,8 +12,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisay
 
 | Tuş | İşlev |
 |---|---|
-| → / Enter | 1. tur: seç; JPG + varsa CR3 → `01_secilen\` |
-| ← / X | 1. tur: ele; çift → `_red\` |
+| → / Enter | 1. tur: **Sakla**; JPG + varsa CR3 → `01_secilen\` |
+| ← / X / Delete | 1. tur: **Ele**; çift → `_red\`, Z ile geri alınabilir; dosya silinmez |
 | Boşluk / ↓ | Karar vermeden sonraki kare; 2. turun sonunda özet |
 | ↑ | Karar vermeden önceki kare |
 | Z | Son kararı geri al; uygulama yeniden açılınca da çalışır |
@@ -27,6 +27,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisay
 | Ctrl+O | Başka çekim klasörü aç |
 | F11 | Tam ekranı değiştir |
 | Esc | Önce yardımı, sonra yakınlaştırmayı kapat; ardından pencereye dön |
+
+**Neyi seçiyorum?** 1. turda **saklanacak fotoğrafları** ayırırsın: Sakla → `01_secilen\`, Ele / Delete → `_red\`. M ile 2. tura geçip sakladıklarının arasından **edit / Lightroom için olanları** E ile `02_edit\` içine kopyalarsın. Kararlar anında günlüğe kaydedilir; ayrıca Kaydet düğmesine basman gerekmez. Delete, 1. turdaki Ele kısayoludur.
 
 Film şeridi: **yeşil = seçilen, kırmızı = elenen, mor = edit seçimi**. Elenen kare yalnızca önizlenir; karar tuşları devre dışıdır. EXIF saatleri ardışık olarak en fazla 1 saniye aralıktaysa **Seri 2/5** ipucu görünür. EXIF yoksa alanlar “—” olur.
 
