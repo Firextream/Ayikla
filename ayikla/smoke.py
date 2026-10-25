@@ -98,7 +98,9 @@ def run_smoke(app, window, output: str) -> None:
             return
         finished = True
         timer.stop()
-        result = {"ok": error is None, "error": str(error) if error else None, "version": __version__,
+        result = {"ok": error is None,
+                  "error": f"Stage {stage}: {type(error).__name__}: {error}" if error else None,
+                  "version": __version__,
                   "checks": checks, "elapsed_seconds": round(time.monotonic() - started, 2),
                   "directory": str(directory)}
         with (directory / "result.json").open("x", encoding="utf-8") as stream:
@@ -160,7 +162,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_Return)
             elif stage == 5:
                 assert (shoot / KEPT / "img_0001.cR3").exists()
-                assert window.current.key == "img_0002" and "yok" in window.raw_badge.text()
+                assert window.current.key == "img_0002" and "No matching CR3" in window.raw_badge.text()
                 assert window.toast.text() == "Kept"
                 key(Qt.Key.Key_Delete)
             elif stage == 6:
