@@ -164,14 +164,14 @@ class MainWindow(QMainWindow):
         intro.setSpacing(22)
         intro.addWidget(label("BİR ÇEKİM. İKİ TUR.", "eyebrow"))
         intro.addWidget(label("İyi kareleri ayır.\nDüzenlemeye hazırla.", "hero"))
-        description = label("1  Ayıkla: JPG + CR3 birlikte taşınır.\n"
-                            "2  Düzenleme seç: seçtiklerin Lightroom için kopyalanır.", "muted")
+        description = label("1  Saklama seçimi: Sakla → 01_secilen; Ele / Delete → _red.\n"
+                            "2  Edit / Lightroom seçimi: E → 02_edit içine kopya.", "muted")
         description.setStyleSheet("font-size: 17px; line-height: 1.5;")
         intro.addWidget(description)
         intro.addSpacing(8)
         start = button("Çekim klasörü seç", self.choose_folder, "primary")
         intro.addWidget(start, 0, Qt.AlignmentFlag.AlignLeft)
-        intro.addWidget(label("Silme yok. Üzerine yazma yok. Z ile geri al.", "muted"))
+        intro.addWidget(label("Kararlar otomatik kaydedilir. Delete ile ele, Z ile geri al. Silme yok.", "muted"))
         self.recent_layout = QVBoxLayout()
         intro.addSpacing(12)
         intro.addLayout(self.recent_layout)
@@ -183,8 +183,8 @@ class MainWindow(QMainWindow):
         content.setContentsMargins(0, 0, 0, 0)
         content.setSpacing(12)
         toolbar = QHBoxLayout()
-        self.cull_button = button("1  Ayıkla", lambda: self.set_mode("cull"))
-        self.edit_button = button("2  Düzenleme seç  ·  M", lambda: self.set_mode("edit"))
+        self.cull_button = button("1  Sakla / Ele", lambda: self.set_mode("cull"))
+        self.edit_button = button("2  Edit / Lightroom  ·  M", lambda: self.set_mode("edit"))
         for control in (self.cull_button, self.edit_button):
             control.setCheckable(True)
             toolbar.addWidget(control)
@@ -198,6 +198,9 @@ class MainWindow(QMainWindow):
         self.progress = QProgressBar()
         self.progress.setTextVisible(False)
         content.addWidget(self.progress)
+        self.round_hint = label("", "muted")
+        self.round_hint.setWordWrap(True)
+        content.addWidget(self.round_hint)
         self.canvas = PhotoCanvas()
         self.viewer = QStackedWidget()
         self.viewer.addWidget(self.canvas)
@@ -214,7 +217,7 @@ class MainWindow(QMainWindow):
         self.end_errors.setMaximumHeight(120)
         self.end_errors.hide()
         end_layout.addWidget(self.end_errors)
-        self.round2_button = button("2. tura geç  ·  M", lambda: self.set_mode("edit"), "primary")
+        self.round2_button = button("Edit / Lightroom seçimine geç  ·  M", lambda: self.set_mode("edit"), "primary")
         end_layout.addWidget(self.round2_button)
         self.explorer_button = button("02_edit klasörünü Explorer'da aç", self.open_edit_folder)
         end_layout.addWidget(self.explorer_button)
@@ -248,7 +251,8 @@ class MainWindow(QMainWindow):
         controls.setObjectName("bar")
         actions = QHBoxLayout(controls)
         actions.setContentsMargins(14, 12, 14, 12)
-        self.reject_button = button("Ele  ·  ← / X", lambda: self.decide(False), "reject")
+        self.reject_button = button("Ele  ·  ← / X / Delete", lambda: self.decide(False), "reject")
+        self.reject_button.setToolTip("JPG + varsa CR3, _red klasörüne taşınır. Z ile geri al; dosya silinmez.")
         actions.addWidget(self.reject_button)
         actions.addStretch()
         self.previous_button = button("↑  Önceki", lambda: self.navigate(-1))
@@ -256,9 +260,11 @@ class MainWindow(QMainWindow):
         actions.addWidget(self.previous_button)
         actions.addWidget(self.next_button)
         actions.addStretch()
-        self.keep_button = button("Seç  ·  → / Enter", lambda: self.decide(True), "keep")
+        self.keep_button = button("Sakla  ·  → / Enter", lambda: self.decide(True), "keep")
+        self.keep_button.setToolTip("Saklanacak JPG + varsa CR3, 01_secilen klasörüne taşınır.")
         actions.addWidget(self.keep_button)
-        self.mark_button = button("Düzenlemeye ayır  ·  E", self.toggle_edit, "keep")
+        self.mark_button = button("Edit'e ayır  ·  E", self.toggle_edit, "keep")
+        self.mark_button.setToolTip("Lightroom için JPG + varsa CR3, 02_edit klasörüne kopyalanır.")
         actions.addWidget(self.mark_button)
         self.summary_button = button("Tur özeti", self.show_summary)
         actions.addWidget(self.summary_button)
@@ -422,10 +428,14 @@ class MainWindow(QMainWindow):
             if allow_preview and preferred and not any(photo.key == preferred for photo in self.photos):
                 self.preview_photo = next((photo for photo in self.session.all_photos() if photo.key == preferred), None)
             if self.mode == "cull":
+                self.round_hint.setText("1. TUR · SAKLAMA: Sakla → 01_secilen · Ele / Delete → _red "
+                                        "(Z ile geri al) · Kararlar otomatik kaydedilir.")
                 position = len(snapshot.kept) + len(snapshot.rejected) + self.index + 1 if self.photos else snapshot.total
                 self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} seçilen  ·  {len(snapshot.rejected)} elenen")
                 self.remaining.setText(f"{len(snapshot.pending)} kararsız kare")
             else:
+                self.round_hint.setText("2. TUR · EDİT / LIGHTROOM: E → JPG + varsa CR3 kopyası 02_edit · "
+                                        "Tekrar E: edit seçimini kaldır · Kararlar otomatik kaydedilir.")
                 position = self.index + 1 if self.photos else 0
                 self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} düzenlemeye ayrılan")
                 self.remaining.setText("01_secilen → 02_edit · kopya")
@@ -441,7 +451,7 @@ class MainWindow(QMainWindow):
                 self.raw_badge.setStyleSheet("" if photo.raw else "color: #cccccc; background: #303030;")
                 self.raw_badge.show()
                 self.edit_badge.setVisible(photo.key in self.session.edits)
-                self.mark_button.setText("Seçimi kaldır  ·  E" if photo.key in self.session.edits else "Düzenlemeye ayır  ·  E")
+                self.mark_button.setText("Edit seçimini kaldır  ·  E" if photo.key in self.session.edits else "Edit'e ayır  ·  E")
                 self.canvas.message = "Yükleniyor…"
                 self.session.save_view(self.mode, photo.key)
                 self._request_image()
@@ -493,7 +503,7 @@ class MainWindow(QMainWindow):
             else:
                 self.decode_failures.discard(self.current.key)
             self.canvas.message = (f"JPEG açılamadı.\n{self.current.jpeg.name}\n{error}\n"
-                                   "Enter ile seçebilir, X ile eleyebilirsin.") if error else ""
+                                   "Enter ile saklayabilir, Delete / X ile eleyebilirsin.") if error else ""
             self._update_decode_summary()
             self.canvas.update()
 
@@ -621,8 +631,11 @@ class MainWindow(QMainWindow):
         if self.canvas.help.isVisible():
             self.canvas.help.dismiss()
         else:
-            self.canvas.help.reveal("KLAVYE\n\n→ / Enter   Seç     ← / X   Ele\nBoşluk / ↓   Sonraki     ↑   Önceki\n"
-                                    "Z   Geri al     M   Turu değiştir     E   Edit seçimi\n"
+            self.canvas.help.reveal("KLAVYE\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
+                                    "← / X / Delete   Ele → _red (dosya silinmez)\n\n"
+                                    "2. TUR · EDİT / LIGHTROOM\nE   02_edit içine kopyala / edit seçimini kaldır\n\n"
+                                    "Kararlar otomatik kaydedilir.\n"
+                                    "Boşluk / ↓   Sonraki     ↑   Önceki\nZ   Geri al     M   Turu değiştir\n"
                                     "F   %100 / Sığdır     Sürükle   Kaydır\nI   Çekim bilgisi     T   Film şeridi\n"
                                     "H / ?   Yardım     Esc   Yardımı / yakınlaştırmayı kapat\nF11   Tam ekran     Ctrl+O   Klasör aç",
                                     auto_fade=False)
@@ -742,7 +755,7 @@ class MainWindow(QMainWindow):
             self.navigate(-1 if key == Qt.Key.Key_Up else 1)
         elif self.mode == "cull" and key in (Qt.Key.Key_Right, Qt.Key.Key_Return, Qt.Key.Key_Enter):
             self.decide(True)
-        elif self.mode == "cull" and key in (Qt.Key.Key_Left, Qt.Key.Key_X):
+        elif self.mode == "cull" and key in (Qt.Key.Key_Left, Qt.Key.Key_X, Qt.Key.Key_Delete):
             self.decide(False)
         elif self.mode == "edit" and key == Qt.Key.Key_E:
             self.toggle_edit()

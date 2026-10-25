@@ -122,6 +122,7 @@ def run_smoke(app, window, output: str) -> None:
                 assert window.session and window.current.key == "img_0001"
                 assert window.session.snapshot().total == 4
                 assert window.session.ignored_files == {"appledouble": 8, "metadata": 3}
+                assert "SAKLAMA" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
                 assert "8 macOS yardımcı dosyası (._) yok sayıldı" in window.ignored_notice.text()
                 if window.canvas.image.isNull():
                     return
@@ -157,7 +158,7 @@ def run_smoke(app, window, output: str) -> None:
                 assert (shoot / KEPT / "img_0001.cR3").exists()
                 assert window.current.key == "img_0002" and "yok" in window.raw_badge.text()
                 assert window.toast.text() == "Seçildi"
-                key(Qt.Key.Key_X)
+                key(Qt.Key.Key_Delete)
             elif stage == 6:
                 assert (shoot / REJECTED / "IMG_0002.JPG").exists()
                 key(Qt.Key.Key_Z)
@@ -167,6 +168,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_M)
             elif stage == 8:
                 assert window.current.key == "img_0001" and window.mode == "edit"
+                assert "LIGHTROOM" in window.round_hint.text() and "02_edit" in window.round_hint.text()
                 key(Qt.Key.Key_E)
             elif stage == 9:
                 assert (shoot / EDIT / "img_0001.cR3").read_bytes() == (shoot / KEPT / "img_0001.cR3").read_bytes()
@@ -239,6 +241,7 @@ def run_smoke(app, window, output: str) -> None:
                 assert all((shoot / name).read_bytes() == payload for name, payload in helpers.items())
                 assert not any(photo.key.startswith("._") for photo in window.session.all_photos())
                 checks.append("AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary")
+                checks.append("Delete rejects without deletion; keep versus edit round labels are explicit")
                 finish()
                 return
             stage += 1
