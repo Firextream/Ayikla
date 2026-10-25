@@ -1,6 +1,7 @@
 {
   "ok": true,
   "error": null,
+  "version": "1.1.1b1",
   "checks": [
     "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
     "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
@@ -12,12 +13,12 @@
     "AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary",
     "Delete rejects without deletion; keep versus edit round labels are explicit"
   ],
-  "elapsed_seconds": 2.12,
-  "directory": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\.tmp\\frozen-verification\\59982d8f0955\\smoke-a34cbd5c738d",
-  "executable": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\dist\\Ayikla\\Ayikla.exe",
-  "bytes": 2597573,
-  "package_bytes": 65790421,
-  "sha256": "61d7001bb433f0106e6d12cbec6ee9fa96e2e964e9c62d8c86565eeb3cd72abc",
+  "elapsed_seconds": 2.19,
+  "directory": ".tmp/frozen-verification/cc791b63d162/smoke-8a439054be7c",
+  "executable": "dist/Ayikla/Ayikla.exe",
+  "bytes": 2597969,
+  "package_bytes": 65790819,
+  "sha256": "5359d098a145c99603507488f9b8ffd015cf623946fb3f7045f20486c9e4306d",
   "exit_code": 0,
   "source_on_path": false,
   "qt_backend": "windows",

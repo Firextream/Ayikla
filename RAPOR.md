@@ -1,8 +1,26 @@
-# Ayikla 1.1 — sonuç ve ölçümler
+# Ayikla 1.1.1b1 — beta değerlendirmesi ve ölçümler
 
 25 Ekim 2026 · Windows 11 x64 · Python 3.12.10 · PySide6 6.12.0 · Pillow 12.3.0
 
 **Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Yerel git deposu, remote yok.
+
+## Kulüp betası öncesi son inceleme
+
+**Karar:** Küçük bir fotoğraf kulübü betası için uygun. İncelenen akışta paylaşımı durduracak başka bir hata saptanmadı; genel kararlı sürüm veya her donanımda doğrulanmış ürün iddiası yok. Bu aşamada yeni özellik yerine 3–5 kişinin farklı bilgisayarlardaki kullanımını görmek daha değerli.
+
+Günlük/taşıma/kopyalama/geri alma, üzerine yazmama, AppleDouble, bozuk JPEG, ölçekli decode, önbellek, arayüz ve dağıtım kodu incelendi. Başlangıçtaki **118 test geçti (62,92 s)**. Bir açılış kusuru düzeltildi: taşınabilir ayar dosyası okunamıyorsa uygulama kapanıyordu; artık varsayılanlarla açılıp Türkçe bilgi veriyor. Ayar dosyası değiştirilmez; çekim günlüğü bağımsız kalır. Okuma hataları, ilk açılış ve bu durumda çekim açıp karar verebilme yeni testlerle kapsandı.
+
+Sürüm **1.1.1b1** pencere başlığına ve H yardımına eklendi; Windows dosya sürümü ve proje sürümü eşlendi. Yardım başlığındaki `KLAVYE` metni mevcut testle yakalanan uyumsuzluk sonrası korundu.
+
+**Paylaşılacak dosya:** `dist\Ayikla-1.1.1b1-Windows-x64.zip`. Betik yalnızca exe, çalışma zamanı/lisanslar, kısayol betiği ve kısa beta kılavuzunu paketler; son klasör ayarları, çekim günlükleri ve fotoğrafları pakete almaz. Var olan ZIP'in üzerine yazmaz. Paketleme testleri özel verinin dışarıda kalmasını, giriş dosyalarının korunmasını, yol sınırını, ZIP bütünlüğünü ve sürüm uyumunu denetler. Yerel `dist\Ayikla` kişisel ayarları koruyabilir; paylaşım için ZIP kullanılır.
+
+[Beta kılavuzu](BETA.md) kurulum, beş dakikalık kabul akışı ve geri bildirim sorularını içerir. GitHub için hata/yorum şablonları hazırlandı. Güncel doğrulama raporlarında kişisel mutlak yollar yerine proje içi göreli yollar kullanılıyor. **GitHub deposu oluşturulmadı, remote eklenmedi, kimseye mesaj gönderilmedi.** Herkese açık kaynak yayını öncesinde depo görünürlüğü ve uygulamanın kaynak lisansı seçilmeli; kökte henüz uygulama lisansı yoktur. `licenses/` üçüncü taraf bildirimleridir.
+
+**Son doğrulama: 131 test geçti (74,09 s); önceki 118 testin tümü korundu.** Yeni exe hem offscreen hem Windows Qt eklentisiyle geçti. Exe 2.597.969 bayt, onedir paket 65.790.819 bayt, paylaşım ZIP'i 26.635.500 bayt (26,64 MB). ZIP SHA-256: `8b2a1137c594a62fda14ea8fdf2f3cf5a8a9888ea0ea8a5c76728188ee6a0de1`.
+
+Güncel paket doğrulamaları: [pytest](docs/test-results.xml), [exe/offscreen](docs/verification.json), [exe/Windows](docs/verification-windows.json), [paylaşım ZIP'i](docs/release-verification.json). ZIP'in CRC bütünlüğü ve runtime dosyalarının doğrulanan pakete bayt düzeyinde eşitliği kontrol edildi; ayrı proje içi geçici klasöre çıkarılan exe Windows eklentisiyle uçtan uca akışı geçti. Ayar/günlük dosyalarının arşivde bulunmadığı doğrulandı. Aşağıdaki önceki teslim sayıları ve benchmark'lar tarihseldir; bu beta için performans benchmark'ı tekrarlanmadı.
+
+**Saha sınırları:** Gerçek R50 dosyalarıyla bu oturumda test yapılmadı. İkinci bilgisayar, yüksek DPI/çoklu monitör, harici disk/SD kart bağlantı kaybı ve gerçek elektrik kesintisi sınanmadı. Paket imzasız; ICC/renk doğruluğu doğrulanmadı. Mevcut minimum pencere 1024×680 mantıksal piksel; yüksek ölçeklemeli küçük ekranda sığmayabilir. İlk kulüp denemesi küçük bir çekimin ayrı kopyasıyla yapılmalı. Bunlar beta geri bildiriminin öncelikleri; yeni özellik olarak eklenmedi.
 
 ## Tasarım düzenlemesi ve klasörlere erişim
 
