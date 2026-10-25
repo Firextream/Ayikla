@@ -1,16 +1,37 @@
-# Ayikla 1.1.1b1 · Beta
+# Ayikla
 
-Canon RAW+JPEG çekimlerini iki turda ayıklar. **Windows x64 · Python 3.12 · PySide6.**
+**İyi kareleri ayır. Seçkini hazırla.**
 
-**Kulüp denemesi:** `dist\Ayikla-1.1.1b1-Windows-x64.zip` paylaşım paketidir; kişisel son klasör ayarlarını içermez. ZIP'i tamamen çıkarıp içindeki Ayikla klasöründen başlat. [Kısa beta kılavuzu ve geri bildirim](BETA.md). Sürüm pencere başlığında ve H yardımında görünür. Önce küçük bir çekim kopyasıyla dene.
+Canon RAW+JPEG çekimleri için sade, klavyeyle kullanılan bir Windows fotoğraf ayıklama uygulaması. Önce saklanacak kareleri, sonra Lightroom'da düzenlenecekleri seç.
 
-**Başlat:** `dist\Ayikla\Ayikla.exe`. Python kurulumu gerekmez. **Ayikla klasörünü içindeki `_internal\` ile birlikte taşı; exe tek başına çalışmaz.** Çekim klasörünü seç veya açılıştaki son beş klasörden birine tıkla. Pencere/tam ekran durumu hatırlanır.
+**Windows x64 · Türkçe arayüz · Canon JPG/JPEG + CR3 · 1.1.1b1 Beta**
 
-Masaüstü kısayolu için proje kökünde çalıştır (mevcut kısayolun üzerine yazmaz):
+### [Windows için indir · ZIP, 26,6 MB](https://github.com/Firextream/Ayikla/releases/download/v1.1.1b1/Ayikla-1.1.1b1-Windows-x64.zip)
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisayolu.ps1"
-```
+[Sürüm notları](https://github.com/Firextream/Ayikla/releases/tag/v1.1.1b1) · [Kullanım yorumu bırak](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Hata bildir](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
+
+![Ayikla galerisi: nötr koyu arayüz, geniş fotoğraf alanı ve Sakla / Ele düğmeleri](docs/gallery.png)
+
+*Ekran görüntülerindeki fotoğraflar test için üretilmiştir; gerçek çekim içermez.*
+
+## İlk kullanım
+
+1. Yukarıdaki **Windows için indir** bağlantısından ZIP'i indir ve tamamını bir klasöre çıkar. GitHub'ın “Source code” ZIP'i çalıştırılabilir uygulama değildir.
+2. `Ayikla` klasörünün içindeki `Ayikla.exe` dosyasını aç. **Python kurulumu gerekmez; `_internal` klasörü exe'nin yanında kalmalı.**
+3. **Klasör aç** ile doğrudan JPG'lerin bulunduğu çekim klasörünü seç. İlk beta denemesini 20–50 çiftin ayrı bir kopyasıyla yap.
+
+Paket imzasızdır; Windows uyarısı çıkabilir. Açılmazsa güvenlik yazılımını kapatmak yerine uyarı metniyle [hata bildir](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md). İsteğe bağlı masaüstü kısayolu için paketteki `MasaustuKisayolu.ps1` betiği kullanılabilir; mevcut kısayolun üzerine yazmaz.
+
+## Saklamak mı, edit için seçmek mi?
+
+| Tur | Amaç | Dosyalara ne olur? |
+|---|---|---|
+| **1 · Sakla / Ele** | Hangi kareler saklanacak? | Sakla → `01_secilen`; Ele / Delete → `_red`. JPG ve varsa CR3 birlikte taşınır. |
+| **2 · Edit / Lightroom** | Saklananlardan hangileri düzenlenecek? | M ile geç, E ile seç → `02_edit` içine JPG+CR3 **kopyalanır**. |
+
+**Delete kalıcı silmez.** Z son kararı geri alır; uygulamayı kapatıp açtıktan sonra da çalışır. Kararlar anında günlüğe yazılır, ayrıca Kaydet düğmesi yoktur. Lightroom Classic'e `02_edit` içeriğini kendin aktarırsın.
+
+## Klavye
 
 | Tuş | İşlev |
 |---|---|
@@ -30,36 +51,53 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisay
 | F11 | Tam ekranı değiştir |
 | Esc | Önce yardımı, sonra yakınlaştırmayı kapat; ardından pencereye dön |
 
-**Neyi seçiyorum?** 1. turda **saklanacak fotoğrafları** ayırırsın: Sakla → `01_secilen\`, Ele / Delete → `_red\`. M ile 2. tura geçip sakladıklarının arasından **edit / Lightroom için olanları** E ile `02_edit\` içine kopyalarsın. Kararlar anında günlüğe kaydedilir; ayrıca Kaydet düğmesine basman gerekmez. Delete, 1. turdaki Ele kısayoludur.
+## Fotoğrafı incele, dosyaya ulaş
 
 **Dosyalara erişim:** Üstteki **Klasörler** menüsünden çekim klasörünü, **Saklananlar / 01_secilen**, **Edit seçimi / 02_edit** ve **Elenenler / _red** klasörlerini Explorer'da açabilirsin. Menüde güncel adetler görünür. Fotoğrafın altındaki **Klasörde aç ↗** o karenin bulunduğu klasörü açar. Tur sonundaki Saklananlar/Elenenler bağlantıları da aynı işi yapar. Uzun dosya adı kısalır; tam adı fareyi üzerine getirince görünür.
 
 Film şeridi: **yeşil = seçilen, kırmızı = elenen, mor = edit seçimi**. Elenen kare yalnızca önizlenir; karar tuşları devre dışıdır. EXIF saatleri ardışık olarak en fazla 1 saniye aralıktaysa **Seri 2/5** ipucu görünür. EXIF yoksa alanlar “—” olur.
 
-Seri/zoom etiketi ve işlem bildirimi 1,5 saniye sonra solar. Bilgi paneli soluklaşır; I veya fare hareketiyle yeniden belirginleşir. Yardım açık kalır. Normal görünüm ve küçük fotoğraflar ölçekli çözülür; tam çözünürlük yalnızca F ile yüklenir.
+F ile %100 odak kontrolü ve sürükleyerek kaydırma; I ile çekim bilgisi; T ile film şeridi. Normal görünüm ve küçük fotoğraflar ölçekli çözülür; tam çözünürlük yalnızca F ile yüklenir. Son beş klasör ve pencere/tam ekran durumu hatırlanır.
+
+<details>
+<summary>Yakınlaştırma, EXIF, film şeridi ve tur sonunu gör</summary>
+
+**%100 odak kontrolü**
+
+![Yüzde yüz yakınlaştırma ve odak kontrolü](docs/zoom.png)
+
+**Çekim bilgileri**
+
+![EXIF bilgi paneli](docs/info.png)
+
+**Film şeridi**
+
+![Durum renkleriyle film şeridi](docs/filmstrip.png)
+
+**Tur sonu ve klasörlere erişim**
+
+![Tur özeti](docs/end.png)
+
+</details>
 
 Tur sonunda sayılar, **2. tura geç** ve **02_edit klasörünü Explorer'da aç** düğmeleri görünür. Lightroom Classic'e `02_edit\` içeriğini kendin içe aktar. CR3'süz JPEG uyarı rozetiyle işlenir. Alt klasörler taranmaz; JPG/JPEG ve harf duyarsız CR3 eşlemesi desteklenir.
 
 `._*`, `Thumbs.db`, `desktop.ini`, `.DS_Store` ve Windows gizli/sistem dosyaları taramada yok sayılır; sayılmaz, gösterilmez, taşınmaz veya kopyalanmaz. Açılışta yok sayılanların sayısı küçük bir satırda görünür. Açılamayan gerçek JPEG'i yine Enter ile seçebilir, X ile eleyebilirsin; bu oturumda açılamayan dosyalar tur özetinde güncel yollarıyla listelenir.
 
-**Dosya güvenliği:** Fotoğraf silinmez, üzerine yazılmaz; `_red\` boşaltılmaz. Kaldırılan edit kopyaları `.ayikla_saklanan\` içine taşınır. Bu klasörü ve `ayikla_log.jsonl` günlüğünü sakla. İşlem önce günlüğe yazılır; yarıda kalırsa açılışta tamamlanır. **Yeniden dene** yarım işlemi tamamlar ve klasörü yeniden tarar; dışarıdan eklenen dosyalar için de bu düğmeyi kullan. Günlük yazma hatasında disk sorununu giderip uygulamayı yeniden aç.
+## Dosya güvenliği
+
+Fotoğraf silinmez, üzerine yazılmaz; `_red\` boşaltılmaz. Kaldırılan edit kopyaları `.ayikla_saklanan\` içine taşınır. Bu klasörü ve `ayikla_log.jsonl` günlüğünü sakla. İşlem önce günlüğe yazılır; yarıda kalırsa açılışta kurtarma denenir. **Yeniden dene** yarım işlemi tamamlar ve klasörü yeniden tarar; dışarıdan eklenen dosyalar için de bu düğmeyi kullan. Günlük yazma hatasında disk sorununu giderip uygulamayı yeniden aç. Ana çekimin bağımsız yedeğini koru.
 
 Son klasörler ve pencere ayarı ayrı, yalnızca sona eklenen `ayikla_settings.jsonl` dosyasında tutulur: exe yanında; Python ile çalıştırırken proje kökünde.
 
 Ayar dosyası okunamazsa uygulama varsayılanlarla açılır ve bir bilgi satırı gösterir; çekim günlüğü etkilenmez.
 
-Geliştirme (PowerShell, proje kökünde):
+## Kulüp betası: yorumun neyi değiştirecek?
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\run.ps1
-.\.venv\Scripts\python.exe -m pytest --basetemp .tmp\pytest-local -q
-.\build.ps1
-.\.venv\Scripts\python.exe scripts\verify_frozen.py
-.\.venv\Scripts\python.exe scripts\package_release.py
-```
+Özellikle **Sakla / Edit ayrımı**, gezinme hızı, odak kontrolü ve klasörlere erişim konusunda yorum arıyoruz. [Kullanım yorumu şablonu](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) veya [hata bildirimi](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md) açabilirsin; GitHub hesabı gerekir. Sürümü H yardımında görebilirsin. Fotoğraflarını, kişisel yollarını, ayar dosyanı veya tüm karar günlüğünü paylaşman gerekmez.
 
-Bu bilgisayarda `.tools\python312\tools\python.exe` de hazırdır; betikler otomatik bulur. Build önce yeni bir klasör oluşturur; önceki paketi silmeden `.tmp\replaced-builds\` içine taşır ve taşınabilir ayarını yeni pakete kopyalar. Yerel git deposu, remote yok.
+**131 otomatik test geçti; paket Windows 11'de doğrulandı.** Başka bilgisayarlar, yüksek DPI/çoklu monitör, gerçek kart bağlantı kaybı ve ICC/renk doğruluğu henüz doğrulanmadı. Minimum pencere 1024×680 mantıksal pikseldir. Bu sürüm bir kulüp betasıdır. CR3 görüntüsü çözülmez; diğer RAW biçimleri ve otomatik Lightroom aktarımı yoktur.
 
-Ölçümleri tekrarlamak için `scripts\benchmark.py generate`, ardından `measure <etiket>` ve `startup <etiket> <exe-yolu>` kullan. Generate yalnızca proje içindeki `.tmp\benchmark\` altında yaklaşık 2,5 GB yapay veri üretir. [Ölçümler ve sınırlar](RAPOR.md).
+[Beş dakikalık beta denemesi](BETA.md) · [Testler, ölçümler ve bilinen sınırlar](RAPOR.md) · [Kaynak koddan çalıştırma ve paketleme](docs/GELISTIRME.md)
+
+Python 3.12 + PySide6; Pillow yalnızca EXIF için kullanılır. Üçüncü taraf bileşenlerin lisans bildirimleri [licenses](licenses/NOTICE.txt) klasöründe ve uygulama paketinde bulunur.
