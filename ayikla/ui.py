@@ -4,42 +4,52 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QRunnable, QRect, QSize, Qt, QThreadPool, QTimer, QUrl, Signal
+from PySide6.QtCore import QObject, QPoint, QRunnable, QRect, QSize, Qt, QThreadPool, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-    QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
+    QFileDialog, QFrame, QHBoxLayout, QLabel, QLayout, QMainWindow, QMessageBox,
+    QMenu, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
 )
 
-from .core import AyiklaError, Photo, ShootSession
+from .core import EDIT, KEPT, REJECTED, AyiklaError, Photo, ShootSession
 from .images import ImageCache
 from .metadata import burst_hints, read_metadata
 from .preferences import Preferences
-from .widgets import FadingOverlay, Filmstrip, PhotoCanvas
+from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
 
 STYLE = """
 QWidget { background: #1a1a1a; color: #dddddd; font-family: 'Segoe UI'; font-size: 13px; }
 QLabel { background: transparent; }
-QLabel#brand { font-size: 19px; font-weight: 800; letter-spacing: 5px; color: #dedede; }
+QLabel#brand { font-size: 17px; font-weight: 700; letter-spacing: 4px; color: #eeeeee; }
 QLabel#muted { color: #999999; }
-QLabel#hero { font-size: 44px; font-weight: 650; }
-QLabel#eyebrow { color: #dedede; font-size: 12px; letter-spacing: 3px; }
-QLabel#counter { font-size: 17px; font-weight: 600; }
-QLabel#filename { font-size: 17px; font-weight: 600; }
-QLabel#badge { border-radius: 6px; padding: 5px 9px; background: #303030; color: #b0b0b0; }
-QFrame#bar { background: #202020; border-radius: 12px; }
-QPushButton { background: #282828; border: 1px solid #404040; border-radius: 8px;
-              padding: 10px 16px; color: #cccccc; font-weight: 600; }
-QPushButton:hover { background: #383838; border-color: #777777; }
-QPushButton:pressed { background: #444444; }
-QPushButton:checked { background: #404040; border-color: #888888; color: #eeeeee; }
+QLabel#hero { font-size: 40px; font-weight: 600; color: #eeeeee; }
+QLabel#eyebrow { color: #999999; font-size: 11px; letter-spacing: 2px; }
+QLabel#counter { font-size: 14px; font-weight: 600; color: #dddddd; }
+QLabel#filename { font-size: 13px; font-weight: 600; color: #dddddd; }
+QLabel#badge { border-radius: 4px; padding: 4px 7px; background: #292929; color: #aaaaaa; font-size: 11px; }
+QLabel#stepNumber { font-size: 24px; font-weight: 500; color: #777777; }
+QLabel#stepTitle { font-size: 14px; font-weight: 600; color: #e0e0e0; }
+QLabel#summaryTitle { font-size: 32px; font-weight: 600; color: #eeeeee; }
+QLabel#summaryCounts { font-size: 17px; color: #cccccc; }
+QFrame#stepCard, QFrame#summaryCard { background: #202020; border: 1px solid #333333; border-radius: 12px; }
+QFrame#bar { background: #202020; border: 1px solid #303030; border-radius: 10px; }
+QPushButton { background: #262626; border: 1px solid #3a3a3a; border-radius: 6px;
+              padding: 7px 12px; color: #cccccc; font-weight: 500; }
+QPushButton:hover { background: #323232; border-color: #666666; color: #eeeeee; }
+QPushButton:pressed { background: #3c3c3c; }
+QPushButton:checked { background: #383838; border-color: #777777; color: #eeeeee; }
+QPushButton#ghost { background: transparent; border-color: transparent; color: #999999; }
+QPushButton#ghost:hover { background: #282828; border-color: #3a3a3a; color: #dddddd; }
+QPushButton#recent { text-align: left; background: #202020; border-color: #303030; padding: 9px 12px; }
+QPushButton#recent:hover { background: #292929; border-color: #555555; }
 QPushButton:disabled { color: #686868; background: #222222; border-color: #303030; }
-QPushButton#primary { background: #dedede; color: #1a1a1a; border: 0; padding: 14px 25px; }
+QPushButton#ghost:disabled { color: #555555; background: transparent; border-color: transparent; }
+QPushButton#primary { background: #dedede; color: #1a1a1a; border: 0; padding: 12px 24px; font-weight: 600; }
 QPushButton#primary:hover { background: #eeeeee; }
-QPushButton#keep { background: #d2d2d2; color: #1a1a1a; border: 0; min-width: 180px; padding: 14px; }
+QPushButton#keep { background: #d2d2d2; color: #1a1a1a; border: 0; min-width: 154px; padding: 10px 18px; font-weight: 600; }
 QPushButton#keep:hover { background: #eeeeee; }
-QPushButton#reject { background: #272727; color: #cccccc; border-color: #494949;
-                    min-width: 180px; padding: 14px; }
+QPushButton#reject { background: #252525; color: #cccccc; border-color: #454545;
+                    min-width: 154px; padding: 10px 18px; }
 QPushButton#reject:hover { background: #3b3b3b; }
 QPushButton#keep:disabled, QPushButton#reject:disabled, QPushButton#primary:disabled {
     background: #292929; color: #606060; border: 1px solid #333333; }
@@ -47,8 +57,17 @@ QScrollBar:horizontal { background: #252525; height: 8px; margin: 0; }
 QScrollBar::handle:horizontal { background: #555555; min-width: 28px; border-radius: 3px; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal { background: none; }
-QProgressBar { border: none; background: #303030; max-height: 3px; min-height: 3px; }
-QProgressBar::chunk { background: #d2d2d2; }
+QScrollBar:vertical { background: #202020; width: 7px; margin: 0; }
+QScrollBar::handle:vertical { background: #555555; min-height: 24px; border-radius: 3px; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+QProgressBar { border: none; background: #2a2a2a; max-height: 2px; min-height: 2px; }
+QProgressBar::chunk { background: #888888; }
+QPlainTextEdit { background: #1c1c1c; border: 1px solid #393939; border-radius: 6px; padding: 8px; color: #cccccc; }
+QMenu { background: #242424; border: 1px solid #444444; padding: 5px; }
+QMenu::item { padding: 9px 20px; border-radius: 4px; }
+QMenu::item:selected { background: #383838; }
+QMenu::separator { background: #3a3a3a; height: 1px; margin: 4px 8px; }
 QToolTip { color: #dddddd; background: #383838; border: 1px solid #777777; padding: 6px; }
 QMessageBox { background: #202020; }
 """
@@ -69,6 +88,7 @@ def app_icon() -> QIcon:
 
 def label(text: str, name: str = "") -> QLabel:
     result = QLabel(text)
+    result.setTextFormat(Qt.TextFormat.PlainText)
     result.setObjectName(name)
     return result
 
@@ -135,58 +155,106 @@ class MainWindow(QMainWindow):
         self._resize_timer.setInterval(180)
         self._resize_timer.timeout.connect(self._request_image)
         self.canvas.resized.connect(lambda: self._resize_timer.start())
+        self.canvas.resized.connect(self._position_toast)
         self.canvas.activity.connect(self._reveal_overlays)
         self._restore_geometry()
 
     def _build_ui(self):
         root = QWidget()
         layout = QVBoxLayout(root)
-        layout.setContentsMargins(24, 18, 24, 16)
-        layout.setSpacing(14)
+        layout.setContentsMargins(20, 12, 20, 10)
+        layout.setSpacing(10)
         header = QHBoxLayout()
+        header.setSpacing(8)
         header.addWidget(label("AYIKLA", "brand"))
-        header.addSpacing(18)
-        self.folder_label = label("Çekimden seçkiye.", "muted")
-        self.folder_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        header.addSpacing(14)
+        self.folder_label = ElidedLabel("Çekimden seçkiye.")
+        self.folder_label.setObjectName("muted")
         header.addWidget(self.folder_label, 1)
-        self.open_button = button("Klasör aç  ·  Ctrl+O", self.choose_folder)
+        self.folders_button = button("Klasörler", lambda: None, "ghost")
+        self.folder_menu = QMenu(self)
+        self.folder_actions = {}
+        for name, title in (("", "Çekim klasörü"), (KEPT, "Saklananlar · 01_secilen"),
+                            (EDIT, "Edit seçimi · 02_edit"), (REJECTED, "Elenenler · _red")):
+            action = self.folder_menu.addAction(title)
+            action.triggered.connect(lambda checked=False, value=name: self.open_shoot_folder(value))
+            self.folder_actions[name] = action
+            if not name:
+                self.folder_menu.addSeparator()
+        self.folders_button.setMenu(self.folder_menu)
+        self.folders_button.setEnabled(False)
+        header.addWidget(self.folders_button)
+        self.open_button = button("Klasör aç", self.choose_folder, "ghost")
+        self.open_button.setToolTip("Çekim klasörü seç · Ctrl+O")
         header.addWidget(self.open_button)
-        self.full_button = button("Tam ekran  ·  F11", self.toggle_fullscreen)
+        self.full_button = button("Tam ekran", self.toggle_fullscreen, "ghost")
+        self.full_button.setToolTip("Tam ekran / pencere · F11")
         header.addWidget(self.full_button)
-        header.addWidget(button("Yardım  ·  H", self.toggle_help))
+        help_button = button("Yardım  ·  H", self.toggle_help, "ghost")
+        header.addWidget(help_button)
+        for control in (self.folders_button, self.open_button, self.full_button, help_button):
+            control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         layout.addLayout(header)
         self.pages = QStackedWidget()
         layout.addWidget(self.pages, 1)
 
+        welcome_page = QScrollArea()
+        welcome_page.setFrameShape(QFrame.Shape.NoFrame)
+        welcome_page.setWidgetResizable(True)
+        welcome_page.setAlignment(Qt.AlignmentFlag.AlignCenter)
         welcome = QWidget()
-        intro = QVBoxLayout(welcome)
-        intro.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        intro.setSpacing(22)
-        intro.addWidget(label("BİR ÇEKİM. İKİ TUR.", "eyebrow"))
-        intro.addWidget(label("İyi kareleri ayır.\nDüzenlemeye hazırla.", "hero"))
-        description = label("1  Saklama seçimi: Sakla → 01_secilen; Ele / Delete → _red.\n"
-                            "2  Edit / Lightroom seçimi: E → 02_edit içine kopya.", "muted")
-        description.setStyleSheet("font-size: 17px; line-height: 1.5;")
+        welcome_layout = QVBoxLayout(welcome)
+        welcome_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        welcome_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.welcome_content = QWidget()
+        self.welcome_content.setMaximumWidth(740)
+        intro = QVBoxLayout(self.welcome_content)
+        intro.setContentsMargins(0, 12, 0, 12)
+        intro.setSpacing(16)
+        intro.addWidget(label("FOTOĞRAF AYIKLAMA  /  İKİ TUR", "eyebrow"))
+        intro.addWidget(label("İyi kareleri ayır.\nSeçkini hazırla.", "hero"))
+        description = label("Çekim klasörünü aç. Önce saklayacaklarını, ardından Lightroom'da\n"
+                            "düzenleyeceklerini seç. JPG ve CR3 birlikte işlenir.", "muted")
+        description.setWordWrap(True)
+        description.setStyleSheet("font-size: 14px;")
         intro.addWidget(description)
-        intro.addSpacing(8)
+        steps = QHBoxLayout()
+        steps.setSpacing(12)
+        for number, title, text in (("01", "Sakla / Ele", "Sakla → 01_secilen\nEle / Delete → _red"),
+                                    ("02", "Edit / Lightroom", "E → 02_edit içine kopya\nLightroom'a aktarmaya hazır")):
+            card = QFrame()
+            card.setObjectName("stepCard")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(18, 14, 18, 14)
+            card_layout.setSpacing(7)
+            card_layout.addWidget(label(number, "stepNumber"))
+            card_layout.addWidget(label(title, "stepTitle"))
+            card_layout.addWidget(label(text, "muted"))
+            steps.addWidget(card, 1)
+        intro.addLayout(steps)
         start = button("Çekim klasörü seç", self.choose_folder, "primary")
         intro.addWidget(start, 0, Qt.AlignmentFlag.AlignLeft)
-        intro.addWidget(label("Kararlar otomatik kaydedilir. Delete ile ele, Z ile geri al. Silme yok.", "muted"))
+        intro.addWidget(label("Otomatik kayıt  ·  Z ile geri al  ·  Dosya silinmez", "muted"))
         self.recent_layout = QVBoxLayout()
-        intro.addSpacing(12)
+        self.recent_layout.setSpacing(5)
+        intro.addSpacing(2)
         intro.addLayout(self.recent_layout)
         self._update_recent()
-        self.pages.addWidget(welcome)
+        welcome_layout.addWidget(self.welcome_content)
+        welcome_page.setWidget(welcome)
+        self.pages.addWidget(welcome_page)
 
         gallery = QWidget()
         content = QVBoxLayout(gallery)
         content.setContentsMargins(0, 0, 0, 0)
-        content.setSpacing(12)
+        content.setSpacing(8)
         toolbar = QHBoxLayout()
+        toolbar.setSpacing(6)
         self.cull_button = button("1  Sakla / Ele", lambda: self.set_mode("cull"))
         self.edit_button = button("2  Edit / Lightroom  ·  M", lambda: self.set_mode("edit"))
         for control in (self.cull_button, self.edit_button):
             control.setCheckable(True)
+            control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
             toolbar.addWidget(control)
         toolbar.addStretch()
         self.counter = label("", "counter")
@@ -204,59 +272,100 @@ class MainWindow(QMainWindow):
         self.canvas = PhotoCanvas()
         self.viewer = QStackedWidget()
         self.viewer.addWidget(self.canvas)
-        end_page = QWidget()
-        end_layout = QVBoxLayout(end_page)
-        end_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        end_layout.setSpacing(20)
-        end_layout.addWidget(label("TUR TAMAMLANDI", "eyebrow"))
-        end_layout.addWidget(label("Seçkin hazır.", "hero"))
-        self.end_counts = label("", "counter")
+        end_page = QScrollArea()
+        end_page.setFrameShape(QFrame.Shape.NoFrame)
+        end_page.setWidgetResizable(True)
+        end_page.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        end_body = QWidget()
+        end_body_layout = QVBoxLayout(end_body)
+        end_body_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        end_body_layout.setContentsMargins(12, 12, 12, 12)
+        end_body_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.end_card = QFrame()
+        self.end_card.setObjectName("summaryCard")
+        self.end_card.setMinimumWidth(520)
+        self.end_card.setMaximumWidth(620)
+        end_layout = QVBoxLayout(self.end_card)
+        end_layout.setContentsMargins(28, 24, 28, 24)
+        end_layout.setSpacing(14)
+        eyebrow = label("TUR TAMAMLANDI", "eyebrow")
+        eyebrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        end_layout.addWidget(eyebrow)
+        title = label("Seçkin hazır.", "summaryTitle")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        end_layout.addWidget(title)
+        self.end_counts = label("", "summaryCounts")
+        self.end_counts.setAlignment(Qt.AlignmentFlag.AlignCenter)
         end_layout.addWidget(self.end_counts)
         self.end_errors = QPlainTextEdit()
         self.end_errors.setReadOnly(True)
-        self.end_errors.setMaximumHeight(120)
+        self.end_errors.setMaximumHeight(96)
         self.end_errors.hide()
         end_layout.addWidget(self.end_errors)
         self.round2_button = button("Edit / Lightroom seçimine geç  ·  M", lambda: self.set_mode("edit"), "primary")
         end_layout.addWidget(self.round2_button)
         self.explorer_button = button("02_edit klasörünü Explorer'da aç", self.open_edit_folder)
         end_layout.addWidget(self.explorer_button)
-        end_layout.addWidget(button("Fotoğraflara dön", self.return_to_photos))
-        end_layout.addWidget(label("Z ile son kararı geri alabilirsin.", "muted"))
+        folder_links = QHBoxLayout()
+        self.kept_folder_button = button("Saklananlar  ↗", lambda: self.open_shoot_folder(KEPT), "ghost")
+        self.rejected_folder_button = button("Elenenler  ↗", lambda: self.open_shoot_folder(REJECTED), "ghost")
+        folder_links.addWidget(self.kept_folder_button)
+        folder_links.addWidget(self.rejected_folder_button)
+        end_layout.addLayout(folder_links)
+        end_layout.addWidget(button("Fotoğraflara dön", self.return_to_photos, "ghost"))
+        end_note = label("Kararlar kaydedildi. Z ile son kararı geri alabilirsin.", "muted")
+        end_note.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        end_layout.addWidget(end_note)
+        end_body_layout.addWidget(self.end_card)
+        end_page.setWidget(end_body)
         self.viewer.addWidget(end_page)
         content.addWidget(self.viewer, 1)
         self.filmstrip = Filmstrip()
         self.filmstrip.activated.connect(self.jump_to)
         content.addWidget(self.filmstrip)
 
-        info = QHBoxLayout()
-        self.filename = label("", "filename")
+        self.photo_info = QWidget()
+        info = QHBoxLayout(self.photo_info)
+        info.setContentsMargins(0, 0, 0, 0)
+        info.setSpacing(7)
+        self.filename = ElidedLabel()
+        self.filename.setObjectName("filename")
+        self.filename.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self.filename.setMinimumWidth(120)
+        self.filename.setMaximumWidth(280)
         info.addWidget(self.filename)
         self.raw_badge = label("", "badge")
         info.addWidget(self.raw_badge)
         self.edit_badge = label("DÜZENLEMEYE AYRILDI", "badge")
         self.edit_badge.setStyleSheet("color: #dedede; background: #363636;")
         info.addWidget(self.edit_badge)
-        info.addStretch()
+        info.addStretch(1)
         self.remaining = label("", "muted")
         info.addWidget(self.remaining)
-        self.zoom_button = button("%100  ·  F", self.toggle_zoom)
-        self.info_button = button("Bilgi  ·  I", self.toggle_info)
-        self.strip_button = button("Şerit  ·  T", self.toggle_filmstrip)
+        self.current_folder_button = button("Klasörde aç  ↗", self.open_current_folder, "ghost")
+        self.zoom_button = button("%100  ·  F", self.toggle_zoom, "ghost")
+        self.info_button = button("Bilgi  ·  I", self.toggle_info, "ghost")
+        self.strip_button = button("Şerit  ·  T", self.toggle_filmstrip, "ghost")
+        info.addWidget(self.current_folder_button)
         for control in (self.zoom_button, self.info_button, self.strip_button):
             info.addWidget(control)
-        content.addLayout(info)
+        for control in (self.current_folder_button, self.zoom_button, self.info_button, self.strip_button):
+            control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        content.addWidget(self.photo_info)
 
         controls = QFrame()
+        self.controls = controls
         controls.setObjectName("bar")
         actions = QHBoxLayout(controls)
-        actions.setContentsMargins(14, 12, 14, 12)
-        self.reject_button = button("Ele  ·  ← / X / Delete", lambda: self.decide(False), "reject")
+        actions.setContentsMargins(8, 7, 8, 7)
+        actions.setSpacing(6)
+        self.reject_button = button("Ele  ·  Delete", lambda: self.decide(False), "reject")
         self.reject_button.setToolTip("JPG + varsa CR3, _red klasörüne taşınır. Z ile geri al; dosya silinmez.")
         actions.addWidget(self.reject_button)
         actions.addStretch()
-        self.previous_button = button("↑  Önceki", lambda: self.navigate(-1))
-        self.next_button = button("Sonraki  ↓ / Boşluk", lambda: self.navigate(1))
+        self.previous_button = button("↑  Önceki", lambda: self.navigate(-1), "ghost")
+        self.next_button = button("Sonraki  ↓", lambda: self.navigate(1), "ghost")
+        self.next_button.setToolTip("Karar vermeden sonraki kare · Boşluk / ↓")
         actions.addWidget(self.previous_button)
         actions.addWidget(self.next_button)
         actions.addStretch()
@@ -272,19 +381,22 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(gallery)
 
         footer = QHBoxLayout()
-        self.undo_button = button("Geri al  ·  Z", self.undo)
+        footer.setSpacing(10)
+        self.undo_button = button("Geri al  ·  Z", self.undo, "ghost")
         footer.addWidget(self.undo_button)
         self.feedback = label("Bir çekim klasörü seçerek başla.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
-        self.retry_button = button("Yeniden dene", self.retry)
+        self.retry_button = button("Yeniden dene", self.retry, "ghost")
         self.retry_button.hide()
         footer.addWidget(self.retry_button)
-        footer.addWidget(label("F  %100  ·  I  Bilgi  ·  T  Şerit", "muted"))
+        footer.addWidget(label("Otomatik kayıt", "muted"))
         layout.addLayout(footer)
         self.undo_button.setEnabled(False)
         self.setCentralWidget(root)
         self.toast = FadingOverlay(root)
+        self.canvas.help.setParent(root)
+        self.canvas.help.hide()
 
     def _update_recent(self):
         while self.recent_layout.count():
@@ -294,7 +406,8 @@ class MainWindow(QMainWindow):
         if self.preferences.recent:
             self.recent_layout.addWidget(label("SON KLASÖRLER", "muted"))
         for path in self.preferences.recent:
-            control = button(Path(path).name, lambda checked=False, value=path: self.open_folder(value))
+            control = button(Path(path).name, lambda checked=False, value=path: self.open_folder(value), "recent")
+            control.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
             control.setToolTip(path)
             self.recent_layout.addWidget(control)
 
@@ -475,12 +588,17 @@ class MainWindow(QMainWindow):
                 self.viewer.setCurrentIndex(1 if snapshot.total and (self.mode == "cull" or self.summary_requested) else 0)
             self.end_counts.setText(f"{snapshot.total} kare  ·  {len(snapshot.kept)} seçilen  ·  "
                                     f"{len(snapshot.rejected)} elenen\n{len(self.session.edits)} düzenlemeye ayrılan")
+            for name, title, count in ((KEPT, "Saklananlar", len(snapshot.kept)),
+                                       (EDIT, "Edit seçimi", len(self.session.edits)),
+                                       (REJECTED, "Elenenler", len(snapshot.rejected))):
+                self.folder_actions[name].setText(f"{title} · {name}  ({count})")
             self._update_decode_summary()
             self.round2_button.setEnabled(bool(snapshot.kept))
             self.filmstrip.set_items(self.session.all_photos(), photo.key if photo else None, self.session.edits)
             self._update_overlays()
             self.canvas.update()
             self._update_enabled()
+            QTimer.singleShot(0, self._position_toast)
         except (OSError, AyiklaError) as error:
             self._show_error(error)
 
@@ -525,6 +643,10 @@ class MainWindow(QMainWindow):
         for control in (self.zoom_button, self.info_button):
             control.setEnabled(has_photo)
         self.strip_button.setEnabled(enabled)
+        self.folders_button.setEnabled(self.session is not None and not self.busy)
+        self.current_folder_button.setEnabled(has_photo)
+        for control in (self.kept_folder_button, self.rejected_folder_button, self.explorer_button):
+            control.setEnabled(enabled)
         self.previous_button.setEnabled(has_photo and self.index > 0)
         self.next_button.setEnabled(has_photo and self.index + 1 < len(self.photos))
         self.undo_button.setEnabled(enabled and bool(self.session.stack))
@@ -536,6 +658,10 @@ class MainWindow(QMainWindow):
         self.mark_button.setVisible(self.mode == "edit")
         self.summary_button.setVisible(self.mode == "edit")
         self.summary_button.setEnabled(enabled)
+        summary_visible = self.viewer.currentIndex() == 1
+        self.controls.setVisible(not summary_visible)
+        self.photo_info.setVisible(not summary_visible)
+        self.remaining.setVisible(self.width() >= 1180)
 
     def navigate(self, offset: int):
         if self.busy or not self.session or self.session.pending_id or self.session.faulted or not self.photos:
@@ -600,8 +726,20 @@ class MainWindow(QMainWindow):
 
     def notify(self, message):
         self.toast.reveal(message)
-        self.toast.move(max(12, (self.centralWidget().width() - self.toast.width()) // 2),
-                        max(12, self.centralWidget().height() - self.toast.height() - 72))
+        self._position_toast()
+
+    def _position_toast(self):
+        origin = self.viewer.mapTo(self.centralWidget(), QPoint(0, 0))
+        horizontal = 12 if self.viewer.currentIndex() == 1 else max(8, (self.viewer.width() - self.toast.width()) // 2)
+        self.toast.move(origin.x() + horizontal,
+                        origin.y() + max(8, self.viewer.height() - self.toast.height() - 18))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if hasattr(self, "toast"):
+            self._position_toast()
+            self.canvas.position_overlays()
+            self.remaining.setVisible(self.width() >= 1180)
 
     def toggle_zoom(self):
         if not self.current or self.busy:
@@ -640,9 +778,6 @@ class MainWindow(QMainWindow):
                                     "H / ?   Yardım     Esc   Yardımı / yakınlaştırmayı kapat\nF11   Tam ekran     Ctrl+O   Klasör aç",
                                     auto_fade=False)
             self.canvas.position_overlays()
-        if not self.session:
-            self.pages.setCurrentIndex(1 if not self.canvas.help.isHidden() else 0)
-            self.canvas.message = "Başlamak için bir çekim klasörü seç."
 
     def toggle_filmstrip(self):
         self.filmstrip.setVisible(not self.filmstrip.isVisible())
@@ -708,13 +843,23 @@ class MainWindow(QMainWindow):
         self.refresh(rescan=False)
 
     def open_edit_folder(self):
+        self.open_shoot_folder(EDIT)
+
+    def open_current_folder(self):
+        if self.current and self.session:
+            relative = self.current.jpeg.parent.relative_to(self.session.root)
+            self.open_shoot_folder("" if relative == Path(".") else relative.as_posix())
+
+    def open_shoot_folder(self, name=""):
         if not self.session or self.busy:
             return
         try:
-            path = self.session._path("02_edit")
+            if name not in {"", KEPT, EDIT, REJECTED}:
+                raise AyiklaError("Yalnızca bu çekimin klasörleri açılabilir.")
+            path = self.session._path(name) if name else self.session.root
             path.mkdir(exist_ok=True)
             if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
-                raise OSError("Explorer açılamadı. Çekim klasöründeki 02_edit klasörünü elle aç.")
+                raise OSError(f"Explorer açılamadı. Klasörü elle aç: {path}")
         except (OSError, AyiklaError) as error:
             self._show_error(error)
 

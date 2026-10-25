@@ -7,13 +7,40 @@ from PySide6.QtWidgets import QAbstractScrollArea, QGraphicsOpacityEffect, QLabe
 from .images import ImageCache
 
 
+class ElidedLabel(QLabel):
+    """Keep long file/folder names from displacing the photo controls."""
+
+    def __init__(self, text="", parent=None):
+        super().__init__(parent)
+        self._full_text = text
+        self.setTextFormat(Qt.TextFormat.PlainText)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.setText(text)
+
+    def setText(self, text):
+        self._full_text = text
+        self.setToolTip(text)
+        self._elide()
+
+    def text(self):
+        return self._full_text
+
+    def _elide(self):
+        super().setText(self.fontMetrics().elidedText(
+            self._full_text, Qt.TextElideMode.ElideMiddle, max(0, self.contentsRect().width())))
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self._elide()
+
+
 class FadingOverlay(QLabel):
     def __init__(self, parent, fade_to=0.0):
         super().__init__(parent)
         self.setTextFormat(Qt.TextFormat.PlainText)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-        self.setStyleSheet("background: rgba(26,26,26,225); color: #dddddd; border: 1px solid #474747;"
-                           "border-radius: 6px; padding: 12px; font-size: 13px;")
+        self.setStyleSheet("background: rgba(26,26,26,240); color: #dddddd; border: 1px solid #404040;"
+                           "border-radius: 8px; padding: 10px 14px; font-size: 12px;")
         self.effect = QGraphicsOpacityEffect(self)
         self.setGraphicsEffect(self.effect)
         self.fade_to = fade_to
@@ -107,7 +134,9 @@ class PhotoCanvas(QWidget):
     def position_overlays(self):
         self.hud.move(18, 16)
         self.info.move(18, 64)
-        self.help.move(max(12, (self.width() - self.help.width()) // 2), 28)
+        parent = self.help.parentWidget()
+        self.help.move(max(12, (parent.width() - self.help.width()) // 2),
+                       max(12, (parent.height() - self.help.height()) // 2))
         self.toast.move(max(12, (self.width() - self.toast.width()) // 2),
                         max(12, self.height() - self.toast.height() - 28))
 

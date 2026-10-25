@@ -151,6 +151,8 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_T)
                 key(Qt.Key.Key_H)
                 assert window.canvas.help.isVisible()
+                assert window.centralWidget().rect().contains(window.canvas.help.geometry())
+                screenshot("help")
                 key(Qt.Key.Key_H)
                 checks.append("100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help")
                 key(Qt.Key.Key_Return)
@@ -210,11 +212,21 @@ def run_smoke(app, window, output: str) -> None:
                     return
                 screenshot("filmstrip")
                 assert {photo.state for photo in window.filmstrip.items} == {"kept", "rejected"}
+                assert "(3)" in window.folder_actions[KEPT].text()
+                assert "(1)" in window.folder_actions[EDIT].text()
+                assert "(1)" in window.folder_actions[REJECTED].text()
+                window.folder_menu.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen)
+                window.folder_menu.popup(window.folders_button.mapToGlobal(window.folders_button.rect().bottomLeft()))
+                app.processEvents()
+                assert window.folder_menu.grab().save(str(directory / "folders.png"))
+                window.folder_menu.hide()
+                checks.append("Polished layout, contained help and shoot-folder menu with live counts")
                 key(Qt.Key.Key_T)
                 window.show_summary()
             elif stage == 21:
                 assert "1 düzenlemeye" in window.end_counts.text()
                 screenshot("end")
+                assert window.controls.isHidden() and window.photo_info.isHidden()
                 checks.append("End screen with kept/rejected/edit counts and round-two action")
                 for extension in ("JPG", "CR3"):
                     with (shoot / f"CORRUPT.{extension}").open("xb") as stream:
