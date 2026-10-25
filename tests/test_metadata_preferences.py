@@ -17,6 +17,7 @@ def test_reads_all_exif_fields_without_decoding_pixels(tmp_path, monkeypatch):
     def forbidden_load(*_args, **_kwargs):
         raise AssertionError("EXIF must not decode pixels")
     monkeypatch.setattr(Image.Image, "load", forbidden_load)
+    monkeypatch.setattr("PIL.ImageFile.ImageFile.load", forbidden_load)
     result = read_metadata(path)
     assert result.taken == datetime(2026, 10, 25, 12, 34, 56, 123000)
     assert (result.shutter, result.aperture, result.iso, result.focal_length, result.lens) == (

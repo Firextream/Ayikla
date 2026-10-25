@@ -89,6 +89,15 @@ def test_fit_decode_stays_scaled_on_oversized_displays(tmp_path):
     assert image.size() == QSize(3200, 2000)
 
 
+def test_full_zoom_decode_respects_exif_orientation(tmp_path):
+    path = tmp_path / "portrait-full.jpg"
+    exif = Image.Exif()
+    exif[274] = 6
+    Image.new("RGB", (2400, 1600), "gray").save(path, exif=exif)
+    image, error = read_image(path, QSize(600, 300), full_resolution=True)
+    assert not error and image.size() == QSize(1600, 2400)
+
+
 def test_cache_eviction_is_bytes_not_count():
     cache = ImageCache(byte_limit=3000)
     image = QImage(10, 10, QImage.Format.Format_RGB32)
