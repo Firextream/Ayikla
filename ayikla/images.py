@@ -152,6 +152,5 @@ class ImageCache(QObject):
         self.wanted = None
 
     def close(self) -> None:
-        for task in self.inflight.values():
-            task.cancelled = True
+        self.clear()
         self.pool.waitForDone()

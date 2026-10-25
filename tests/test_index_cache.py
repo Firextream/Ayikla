@@ -139,3 +139,15 @@ def test_preload_requests_two_ahead_one_behind():
                              cache=SimpleNamespace(show=lambda *args, **kwargs: captured.append(args)))
     MainWindow._request_image(window)
     assert captured[0][1] == [Path("3"), Path("4"), Path("1")]
+
+
+def test_close_never_restarts_a_cancelled_current_decode(monkeypatch):
+    cache = ImageCache()
+    key = ("generated.jpg", 1, 1, 10, 10, False)
+    cache.wanted, cache.desired = key, {key}
+    restarted = []
+    monkeypatch.setattr(cache.pool, "start", lambda *args: restarted.append(args))
+    cache.close()
+    # A queued result can arrive after the close handler finished waiting.
+    cache._finished(key, QImage(), "cancelled")
+    assert not restarted and not cache.inflight and cache.wanted is None
