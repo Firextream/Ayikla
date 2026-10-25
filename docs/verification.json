@@ -1,7 +1,7 @@
 {
   "ok": true,
   "error": null,
-  "version": "1.1.1b1",
+  "version": "1.1.2b1",
   "checks": [
     "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
     "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
@@ -13,12 +13,12 @@
     "AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary",
     "Delete rejects without deletion; keep versus edit round labels are explicit"
   ],
-  "elapsed_seconds": 2.0,
-  "directory": ".tmp/frozen-verification/f2cae0b9d3fa/smoke-112d4a693d06",
+  "elapsed_seconds": 1.78,
+  "directory": ".tmp/frozen-verification/bae0a5fb69eb/smoke-13e953b48d00",
   "executable": "dist/Ayikla/Ayikla.exe",
-  "bytes": 2597969,
-  "package_bytes": 65790819,
-  "sha256": "5359d098a145c99603507488f9b8ffd015cf623946fb3f7045f20486c9e4306d",
+  "bytes": 2597239,
+  "package_bytes": 65790089,
+  "sha256": "34c659c0a18e94b8e0f79d0fb6e6c3c5b93b839f8d644c388e3ed9b1e59c5d85",
   "exit_code": 0,
   "source_on_path": false,
   "qt_backend": "offscreen",

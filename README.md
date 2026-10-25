@@ -100,7 +100,7 @@ We especially want feedback on the **Keep vs Edit distinction**, navigation spee
 
 Include the version shown in H help, Windows version, display scaling, camera and approximate photo count. Do not post private photos, personal paths, settings files or complete shoot journals.
 
-The package is tested on Windows 11 x64 with generated JPEGs and dummy CR3 files. Other computers, high DPI/multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. CR3 images are not decoded; other RAW formats and automatic Lightroom import are not supported.
+**135 tests passed**, including reopening and undoing a journal from the previous Turkish release. The package and the app extracted from the ZIP are tested on Windows 11 x64 with generated JPEGs and dummy CR3 files. Other computers, high DPI/multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. CR3 images are not decoded; other RAW formats and automatic Lightroom import are not supported.
 
 [Five-minute beta guide](BETA.md) · [Validation and benchmark report (Turkish)](RAPOR.md) · [Run from source and build](docs/GELISTIRME.md)
 

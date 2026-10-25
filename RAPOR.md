@@ -1,8 +1,20 @@
-# Ayikla 1.1.1b1 — beta değerlendirmesi ve ölçümler
+# Ayikla 1.1.2b1 — İngilizce kulüp betası
 
 25 Ekim 2026 · Windows 11 x64 · Python 3.12.10 · PySide6 6.12.0 · Pillow 12.3.0
 
-**Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Yerel git deposu, remote yok.
+**Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Paylaşım paketi `dist\Ayikla-1.1.2b1-Windows-x64.zip`.
+
+## İngilizce sürüm ve GitHub yayını
+
+Emir'in isteğiyle arayüz İngilizceye çevrildi: başlangıç, Keep/Reject ve Edit turları, sayaçlar, dosya menüsü, yardım, bildirimler, EXIF etiketleri, tur özeti, bozuk JPEG kartı ve işlem/kurtarma hataları. `01_secilen`, `02_edit`, `_red`, `.ayikla_saklanan` ve günlük kayıt biçimi aynen korundu. İngilizce mesajlarda büyük/küçük harf farklı olsa da günlük koruma önerisinin gösterilmesi test edildi.
+
+**135 test geçti (54,68 s).** Önceki 131 test korundu; görünen metin beklentileri İngilizceye güncellendi. Dört yeni test İngilizce başlangıç/yardım/hataları, Unicode dosya adıyla EXIF etiketlerini, günlük hata yönlendirmesini ve **önceki Türkçe 1.1.1b1 sürümünün ürettiği gerçek günlük kaydını açıp tam yola geri almayı** kapsar. Tüm dosyalar yapaydır; gerçek fotoğraflara dokunulmadı.
+
+GitHub ana sayfası, beta kılavuzu, geliştirme kılavuzu ve hata/yorum şablonları İngilizce hazırlandı. Yorumlar Türkçe veya İngilizce olabilir. Yeni ZIP içinde İngilizce `GETTING_STARTED.md` bulunur. Emir herkese açık `Firextream/Ayikla` deposuna yayını açıkça onayladı. Uygulamanın kaynak kodu için henüz bir açık kaynak lisansı seçilmedi; üçüncü taraf bildirimleri pakette korunuyor.
+
+İngilizce paket offscreen ve Windows Qt eklentisiyle geçti; ZIP'ten ayrı klasöre çıkarılan uygulama da aynı akışı tamamladı. Exe **2.597.239 bayt**, ZIP **26.633.978 bayt**. ZIP SHA-256: `c63da4e5264a1a47eaaa149ee757a628de90339cb966ca2168f03eddf7b84260`. [Paket doğrulaması](docs/release-verification.json). Paket testindeki eski Türkçe “yok” metin beklentisi İngilizce uyarıya güncellendi; uygulamanın dosya davranışı değişmedi. İlk paket taşımasındaki Windows erişim hatası sırasında eski paket korundu; aşamalı paket yeniden yayınlanarak tamamlandı.
+
+Aşağıdaki 1.1.1b1 ve önceki sürüm bölümleri geçmiş teslim kayıtlarıdır. Güncel test, paket ve ekran görüntüleri `docs` altındadır. Performans benchmark'ı bu dil değişikliğinde yeniden çalıştırılmadı.
 
 ## Kulüp betası öncesi son inceleme
 
