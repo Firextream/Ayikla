@@ -8,7 +8,7 @@ from PySide6.QtCore import QObject, QRunnable, QRect, QSize, Qt, QThreadPool, QT
 from PySide6.QtGui import QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
-    QProgressBar, QPushButton, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
+    QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from .core import AyiklaError, Photo, ShootSession
@@ -111,6 +111,7 @@ class MainWindow(QMainWindow):
         self.zoomed = False
         self.preview_photo = None
         self.summary_requested = False
+        self.decode_failures: set[str] = set()
         self.metadata = {}
         self.bursts = {}
         self._metadata_task = None
@@ -191,6 +192,9 @@ class MainWindow(QMainWindow):
         self.counter = label("", "counter")
         toolbar.addWidget(self.counter)
         content.addLayout(toolbar)
+        self.ignored_notice = label("", "muted")
+        self.ignored_notice.hide()
+        content.addWidget(self.ignored_notice)
         self.progress = QProgressBar()
         self.progress.setTextVisible(False)
         content.addWidget(self.progress)
@@ -205,6 +209,11 @@ class MainWindow(QMainWindow):
         end_layout.addWidget(label("Seçkin hazır.", "hero"))
         self.end_counts = label("", "counter")
         end_layout.addWidget(self.end_counts)
+        self.end_errors = QPlainTextEdit()
+        self.end_errors.setReadOnly(True)
+        self.end_errors.setMaximumHeight(120)
+        self.end_errors.hide()
+        end_layout.addWidget(self.end_errors)
         self.round2_button = button("2. tura geç  ·  M", lambda: self.set_mode("edit"), "primary")
         end_layout.addWidget(self.round2_button)
         self.explorer_button = button("02_edit klasörünü Explorer'da aç", self.open_edit_folder)
@@ -337,6 +346,7 @@ class MainWindow(QMainWindow):
         if self.session:
             self.session.close()
         self.session = result
+        self.decode_failures.clear()
         self.preview_photo = None
         self.summary_requested = False
         self.zoomed = False
@@ -405,6 +415,8 @@ class MainWindow(QMainWindow):
             return
         try:
             snapshot = self.session.rescan() if rescan else self.session.snapshot()
+            self.ignored_notice.setText(self.session.ignored_notice)
+            self.ignored_notice.setVisible(bool(self.session.ignored_notice))
             self.photos = snapshot.pending if self.mode == "cull" else snapshot.kept
             self.index = next((i for i, photo in enumerate(self.photos) if photo.key == preferred), 0)
             if allow_preview and preferred and not any(photo.key == preferred for photo in self.photos):
@@ -453,6 +465,7 @@ class MainWindow(QMainWindow):
                 self.viewer.setCurrentIndex(1 if snapshot.total and (self.mode == "cull" or self.summary_requested) else 0)
             self.end_counts.setText(f"{snapshot.total} kare  ·  {len(snapshot.kept)} seçilen  ·  "
                                     f"{len(snapshot.rejected)} elenen\n{len(self.session.edits)} düzenlemeye ayrılan")
+            self._update_decode_summary()
             self.round2_button.setEnabled(bool(snapshot.kept))
             self.filmstrip.set_items(self.session.all_photos(), photo.key if photo else None, self.session.edits)
             self._update_overlays()
@@ -475,8 +488,21 @@ class MainWindow(QMainWindow):
     def _image_loaded(self, path: str, image: QImage, error: str):
         if self.current and path == str(self.current.jpeg):
             self.canvas.image = image
-            self.canvas.message = f"JPEG açılamadı.\n{self.current.jpeg.name}\n{error}" if error else ""
+            if error:
+                self.decode_failures.add(self.current.key)
+            else:
+                self.decode_failures.discard(self.current.key)
+            self.canvas.message = (f"JPEG açılamadı.\n{self.current.jpeg.name}\n{error}\n"
+                                   "Enter ile seçebilir, X ile eleyebilirsin.") if error else ""
+            self._update_decode_summary()
             self.canvas.update()
+
+    def _update_decode_summary(self):
+        paths = [photo.jpeg.relative_to(self.session.root).as_posix()
+                 for photo in self.session.all_photos() if photo.key in self.decode_failures]
+        self.end_errors.setPlainText("Bu oturumda açılamayan JPEG’ler "
+                                     f"({len(paths)}):\n" + "\n".join(paths) if paths else "")
+        self.end_errors.setVisible(bool(paths))
 
     def _update_enabled(self):
         blocked = self.busy or bool(self.session and (self.session.pending_id or self.session.faulted))

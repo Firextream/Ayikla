@@ -69,6 +69,12 @@ def run_smoke(app, window, output: str) -> None:
             with (shoot / f"img_{index:04d}.cR3").open("xb") as stream:
                 stream.write(b"GENERATED RAW TEST DATA " * 1000)
     del image, data
+    helpers = {f"._IMG_{index:04d}.{extension}": b"GENERATED APPLEDOUBLE METADATA"
+               for index in range(1, 5) for extension in ("JPG", "CR3")}
+    helpers.update({name: b"GENERATED METADATA" for name in ("Thumbs.db", "desktop.ini", ".DS_Store")})
+    for name, payload in helpers.items():
+        with (shoot / name).open("xb") as stream:
+            stream.write(payload)
     window.grab().save(str(directory / "welcome.png"))
     started, stage, finished = time.monotonic(), 0, False
     checks = []
@@ -114,6 +120,9 @@ def run_smoke(app, window, output: str) -> None:
                 window.open_folder(shoot)
             elif stage == 1:
                 assert window.session and window.current.key == "img_0001"
+                assert window.session.snapshot().total == 4
+                assert window.session.ignored_files == {"appledouble": 8, "metadata": 3}
+                assert "8 macOS yardımcı dosyası (._) yok sayıldı" in window.ignored_notice.text()
                 if window.canvas.image.isNull():
                     return
                 screenshot("gallery")
@@ -205,6 +214,31 @@ def run_smoke(app, window, output: str) -> None:
                 assert "1 düzenlemeye" in window.end_counts.text()
                 screenshot("end")
                 checks.append("End screen with kept/rejected/edit counts and round-two action")
+                for extension in ("JPG", "CR3"):
+                    with (shoot / f"CORRUPT.{extension}").open("xb") as stream:
+                        stream.write(b"GENERATED CORRUPT PHOTO TEST")
+                window.set_mode("cull")
+                window.retry()
+            elif stage == 22:
+                if "JPEG açılamadı" not in window.canvas.message:
+                    return
+                assert window.current.key == "corrupt" and window.current.raw is not None
+                assert window.keep_button.isEnabled() and window.reject_button.isEnabled()
+                screenshot("corrupt")
+                key(Qt.Key.Key_X)
+            elif stage == 23:
+                assert window.viewer.currentIndex() == 1
+                assert "_red/CORRUPT.JPG" in window.end_errors.toPlainText()
+                screenshot("corrupt-summary")
+                key(Qt.Key.Key_Z)
+            elif stage == 24:
+                assert (shoot / "CORRUPT.JPG").read_bytes() == b"GENERATED CORRUPT PHOTO TEST"
+                key(Qt.Key.Key_Return)
+            elif stage == 25:
+                assert "01_secilen/CORRUPT.JPG" in window.end_errors.toPlainText()
+                assert all((shoot / name).read_bytes() == payload for name, payload in helpers.items())
+                assert not any(photo.key.startswith("._") for photo in window.session.all_photos())
+                checks.append("AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary")
                 finish()
                 return
             stage += 1
