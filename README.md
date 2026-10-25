@@ -30,6 +30,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\dist\Ayikla\MasaustuKisay
 
 **Neyi seçiyorum?** 1. turda **saklanacak fotoğrafları** ayırırsın: Sakla → `01_secilen\`, Ele / Delete → `_red\`. M ile 2. tura geçip sakladıklarının arasından **edit / Lightroom için olanları** E ile `02_edit\` içine kopyalarsın. Kararlar anında günlüğe kaydedilir; ayrıca Kaydet düğmesine basman gerekmez. Delete, 1. turdaki Ele kısayoludur.
 
+**Dosyalara erişim:** Üstteki **Klasörler** menüsünden çekim klasörünü, **Saklananlar / 01_secilen**, **Edit seçimi / 02_edit** ve **Elenenler / _red** klasörlerini Explorer'da açabilirsin. Menüde güncel adetler görünür. Fotoğrafın altındaki **Klasörde aç ↗** o karenin bulunduğu klasörü açar. Tur sonundaki Saklananlar/Elenenler bağlantıları da aynı işi yapar. Uzun dosya adı kısalır; tam adı fareyi üzerine getirince görünür.
+
 Film şeridi: **yeşil = seçilen, kırmızı = elenen, mor = edit seçimi**. Elenen kare yalnızca önizlenir; karar tuşları devre dışıdır. EXIF saatleri ardışık olarak en fazla 1 saniye aralıktaysa **Seri 2/5** ipucu görünür. EXIF yoksa alanlar “—” olur.
 
 Seri/zoom etiketi ve işlem bildirimi 1,5 saniye sonra solar. Bilgi paneli soluklaşır; I veya fare hareketiyle yeniden belirginleşir. Yardım açık kalır. Normal görünüm ve küçük fotoğraflar ölçekli çözülür; tam çözünürlük yalnızca F ile yüklenir.

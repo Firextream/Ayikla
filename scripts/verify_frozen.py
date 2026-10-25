@@ -52,7 +52,9 @@ filename = "verification-windows.json" if backend == "windows" else "verificatio
 (docs / filename).write_text(json.dumps(result, ensure_ascii=False, indent=2), "utf-8")
 for source, target in (("gallery.png", "gallery.png"), ("zoom.png", "zoom.png"), ("info.png", "info.png"),
                        ("filmstrip.png", "filmstrip.png"), ("end.png", "end.png"),
-                       ("gallery.png", "arayuz.png"), ("welcome.png", "baslangic.png")):
+                       ("gallery.png", "arayuz.png"), ("welcome.png", "baslangic.png"),
+                       ("folders.png", "folders.png"), ("help.png", "help.png"),
+                       ("corrupt.png", "corrupt.png"), ("corrupt-summary.png", "corrupt-summary.png")):
     image = results[0].parent / source
     if image.exists() and backend == "offscreen":
         shutil.copyfile(image, docs / target)

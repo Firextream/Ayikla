@@ -4,13 +4,25 @@
 
 **Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Yerel git deposu, remote yok.
 
+## Tasarım düzenlemesi ve klasörlere erişim
+
+Galeri daha geniş fotoğraf alanı, daha küçük araç düğmeleri ve sade bir alt işlem çubuğuyla düzenlendi. `#1a1a1a` nötr zemin korundu. Başlangıç ekranında iki tur ayrı kartlarda anlatılıyor; son klasörler küçük pencerede kaydırılabiliyor. Tur sonu ortalanmış bir kartta; pasif fotoğraf kontrolleri gizleniyor. Hata dosyalarının listesi korunuyor.
+
+**Klasörler** menüsü çekim kökünü, **Saklananlar / 01_secilen**, **Edit seçimi / 02_edit** ve **Elenenler / _red** klasörlerini güncel adetlerle sunar. Fotoğrafın altındaki **Klasörde aç ↗** bulunduğu klasörü açar; kare taşınınca doğru yeni klasöre gider. Tur sonuna Saklananlar ve Elenenler bağlantıları eklendi. Explorer bağlantıları yalnızca açık çekimin bu klasörlerini açabilir.
+
+Uzun dosya adları ortadan kısaltılıyor; uzantı görünür, tam ad araç ipucunda korunur. Yardım başlangıç ekranını değiştirmeden pencerenin ortasında açılır. Bildirimler karar düğmelerini kapatmaz; tur özetinde kartın yanına yerleşir. **1024×680 ve 1440×960** boyutlarında taşma, uzun ad, yardım, bildirim, beş son klasör ve özet kaydırma denendi. Explorer erişimi testlerde yakalandı; gerçek klasör pencereleri açılmadı. Tüm test fotoğrafları yapaydır.
+
+**118 pytest testi geçti: önceki 110 + 8 yeni test.** Güncel [pytest kaydı](docs/test-results.xml), [exe doğrulaması](docs/verification.json) ve [Windows doğrulaması](docs/verification-windows.json) teslim edilen pakete aittir. [Galeri](docs/gallery.png), [başlangıç](docs/baslangic.png), [tur sonu](docs/end.png), [klasör menüsü](docs/folders.png), [yardım](docs/help.png). Exe **2.597.573 bayt**, paket **65.790.421 bayt**; SHA-256 `61d7001bb433f0106e6d12cbec6ee9fa96e2e964e9c62d8c86565eeb3cd72abc`. Paket hem offscreen hem Windows Qt eklentisiyle geçti. Performans benchmark'ı tekrarlanmadı; aşağıdaki süreler önceki V1/V1.1 karşılaştırmasıdır.
+
+Dosya motoru, eşleştirme, günlük biçimi ve karar kısayolları değiştirilmedi. Kalıcı silme veya üzerine yazma eklenmedi. İnceleme için yeni exe hazırlandı; gerçek çekimde kullanıcı incelemesi sonraki adımdır.
+
 ## Delete tuşu ve saklama / edit ayrımı
 
-**110 test geçti: önceki 104 + 6 yeni test.** 1. turda **Delete = Ele**: JPG ve varsa CR3 `_red\` içine taşınır; Z tam yollarına geri getirir. Kalıcı silme eklenmedi. Bozuk JPEG, CR3'süz kare ve hedef çakışması denendi; hedefteki dosya korunuyor. 2. turda Delete işlem yapmıyor.
+**Bu teslimde 110 test geçti: önceki 104 + 6 yeni test.** 1. turda **Delete = Ele**: JPG ve varsa CR3 `_red\` içine taşınır; Z tam yollarına geri getirir. Kalıcı silme eklenmedi. Bozuk JPEG, CR3'süz kare ve hedef çakışması denendi; hedefteki dosya korunuyor. 2. turda Delete işlem yapmıyor.
 
 Galeri düğmeleri **1 Sakla / Ele** ve **2 Edit / Lightroom** olarak adlandırıldı. İlk turda **Sakla → 01_secilen** ile saklanacak kareler ayrılır. İkinci turda **E → 02_edit** ile Lightroom için kopyalar oluşturulur. Her turda amaç ve hedef klasör sabit bilgi satırında görünür. Kararlar otomatik günlüğe yazılır; ayrıca Kaydet işlemi yoktur. Açılış açıklaması, yardım ve README tuş tablosu güncellendi.
 
-**Yeni exe offscreen ve Windows Qt eklentisiyle geçti; Delete ve iki turun etiketleri paket içinde de doğrulandı.** Exe **2.592.106 bayt**, paket **65.784.954 bayt**. SHA-256: `548a814c8f9fd915a133f3feed9e5e3033a28f5e9c103ca86fe6acab18b7fe9d`. Güncel kayıtlar: [pytest](docs/test-results.xml), [exe](docs/verification.json), [Windows](docs/verification-windows.json). Ekran görüntüleri de yeni paketten yenilendi. Performans benchmark'ı tekrarlanmadı.
+**Bu teslimdeki exe offscreen ve Windows Qt eklentisiyle geçti; Delete ve iki turun etiketleri paket içinde de doğrulandı.** O sürümde exe **2.592.106 bayt**, paket **65.784.954 bayttı**. Güncel kayıtlar: [pytest](docs/test-results.xml), [exe](docs/verification.json), [Windows](docs/verification-windows.json). Ekran görüntüleri de yeni paketten yenilendi. Performans benchmark'ı tekrarlanmadı.
 
 ## R50 kartındaki yardımcı dosyalar — hata düzeltmesi
 
