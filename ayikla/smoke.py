@@ -68,7 +68,8 @@ def run_smoke(app, window, output: str) -> None:
         with (shoot / f"IMG_{index:04d}.JPG").open("xb") as stream:
             stream.write(jpeg[:2] + b"\xff\xe1" + struct.pack(">H", len(payload) + 2) + payload + jpeg[2:])
         if index != 2:
-            with (shoot / f"img_{index:04d}.cR3").open("xb") as stream:
+            extension = {1: "cR3", 3: "RAF", 4: "ORF"}[index]
+            with (shoot / f"img_{index:04d}.{extension}").open("xb") as stream:
                 stream.write(b"GENERATED RAW TEST DATA " * 1000)
     del image, data
     helpers = {f"._IMG_{index:04d}.{extension}": b"GENERATED APPLEDOUBLE METADATA"
@@ -162,7 +163,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_Return)
             elif stage == 5:
                 assert (shoot / KEPT / "img_0001.cR3").exists()
-                assert window.current.key == "img_0002" and "No matching CR3" in window.raw_badge.text()
+                assert window.current.key == "img_0002" and "No matching RAW" in window.raw_badge.text()
                 assert window.toast.text() == "Kept"
                 key(Qt.Key.Key_Delete)
             elif stage == 6:
@@ -258,6 +259,30 @@ def run_smoke(app, window, output: str) -> None:
                 assert not any(photo.key.startswith("._") for photo in window.session.all_photos())
                 checks.append("AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary")
                 checks.append("Delete rejects without deletion; keep versus edit round labels are explicit")
+                window.set_mode("edit")
+                window.jump_to("img_0001")
+                window.open_colors()
+                window.color_browser.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen)
+            elif stage == 26:
+                browser = window.color_browser
+                if not browser.profiles or browser.images.inflight:
+                    return
+                assert len(browser.profiles) == 3 and "corrupt" in browser.failures
+                assert len(browser.results) == 2
+                assert browser.grab().save(str(directory / "colors.png"))
+                browser.filter.setCurrentIndex(4)
+            elif stage == 27:
+                browser = window.color_browser
+                if browser.images.inflight:
+                    return
+                assert browser.results
+                assert browser.grab().save(str(directory / "color-filter.png"))
+                selected = browser.results[0][0]
+                browser.choose(selected)
+                assert window.current.key == selected and window.mode == "edit"
+                assert len(window.session.edits) == 1
+                assert any(photo.raw and photo.raw.suffix == ".ORF" for photo in window.session.snapshot().kept)
+                checks.append("Scaled color analysis, similar palettes, tone filter, corrupt skip and jump without edit decisions; RAF/ORF pairing")
                 finish()
                 return
             stage += 1

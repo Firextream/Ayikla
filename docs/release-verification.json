@@ -1,7 +1,7 @@
 {
   "ok": true,
   "error": null,
-  "version": "1.1.2b1",
+  "version": "1.2.0b1",
   "checks": [
     "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
     "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
@@ -11,11 +11,12 @@
     "Polished layout, contained help and shoot-folder menu with live counts",
     "End screen with kept/rejected/edit counts and round-two action",
     "AppleDouble/metadata ignored; corrupt JPEG reject, undo, keep and summary",
-    "Delete rejects without deletion; keep versus edit round labels are explicit"
+    "Delete rejects without deletion; keep versus edit round labels are explicit",
+    "Scaled color analysis, similar palettes, tone filter, corrupt skip and jump without edit decisions; RAF/ORF pairing"
   ],
-  "elapsed_seconds": 1.94,
-  "archive": "dist/Ayikla-1.1.2b1-Windows-x64.zip",
-  "bytes": 26633978,
-  "sha256": "c63da4e5264a1a47eaaa149ee757a628de90339cb966ca2168f03eddf7b84260",
+  "elapsed_seconds": 1.67,
+  "archive": "dist/Ayikla-1.2.0b1-Windows-x64.zip",
+  "bytes": 26647460,
+  "sha256": "8594eedb278cb1f937a533697b0e9ca4ac27b241801848a8697e735c69166fc7",
   "verified": "ZIP CRC, byte-identical runtime, no settings/journal, extracted Windows app smoke"
 }

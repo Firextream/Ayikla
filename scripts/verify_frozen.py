@@ -51,7 +51,7 @@ docs = root / "docs"
 docs.mkdir(exist_ok=True)
 filename = "verification-windows.json" if backend == "windows" else "verification.json"
 (docs / filename).write_text(json.dumps(result, ensure_ascii=False, indent=2), "utf-8")
-for source, target in (("gallery.png", "gallery.png"), ("zoom.png", "zoom.png"), ("info.png", "info.png"),
+for source, target in (("colors.png", "colors.png"), ("color-filter.png", "color-filter.png"), ("gallery.png", "gallery.png"), ("zoom.png", "zoom.png"), ("info.png", "info.png"),
                        ("filmstrip.png", "filmstrip.png"), ("end.png", "end.png"),
                        ("gallery.png", "arayuz.png"), ("welcome.png", "baslangic.png"),
                        ("folders.png", "folders.png"), ("help.png", "help.png"),

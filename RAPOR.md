@@ -1,5 +1,18 @@
 # Ayikla 1.1.2b1 — İngilizce kulüp betası
 
+## 1.2.0b1 — renk fikirleri ve farklı kameralar
+
+Edit turunda **C / Color ideas**: belirli tonu seçip kadrajın en az %15, %30 veya %50'sinde bulunan kareleri bulma; mevcut kareye benzer renk paletleriyle bir gönderide birlikte kullanılabilecek kareleri görme. En fazla 24 sonuç, küçük önizleme, beş baskın renk örneği ve renk oranı/palet kesişim oranı gösterilir. Sonuca tıklama fotoğrafa götürür; **E ile edit seçimi kullanıcıya aittir**. Otomatik seçim, dosya değişikliği veya dış servise gönderim yok.
+
+Renk analizi yalnızca seçilmiş JPEG'lerde, 128 piksel ölçekli decode ve en fazla 96×96 örnekleme üzerinden arka planda yapılır. Tanınan ICC profili analiz için sRGB'ye çevrilir; profilsiz dosya sRGB kabul edilir. Siyah/gri/beyaz renkli tonlardan ayrılır. Benzerlik, parlaklık dilimleri içeren renk histogramlarının kesişimidir; bir estetik/kalite puanı değildir. Kamera JPEG profili, ışık ve beyaz dengesi sonucu etkiler. Pencereyi kapatmak işi iptal eder; aynı oturumda değişmeyen dosyaların küçük sayısal tanımlayıcıları tekrar kullanılır. Önizleme önbelleği 4 MiB ile sınırlıdır. Açılamayan JPEG'ler sonuçtan çıkarılır ve tur özetine eklenir.
+
+**RAW eşleştirme:** Fuji RAF; Sony ARW/SRF/SR2; Olympus/OM System ORF; Canon CR3/CR2/CRW; Nikon NEF/NRW; Panasonic/Leica RW2/RWL; Pentax PEF; Samsung SRW; DNG. Dosya kökü harf duyarsız eşleşmelidir; aynı kökte iki RAW varsa çakışma bildirilir. RAW dosyasının içeriği çözülmez, JPG ile birlikte taşınır/kopyalanır. RAW-only, HEIC, farklı adlandırılmış çiftler desteklenmez; her kamera modeliyle gerçek çekim testi yapıldığı anlamına gelmez.
+
+**173 test geçti (57,84 saniye):** önceki 135 test + 38 yeni vaka. Her RAW uzantısında eşleştirme, keep/reject/undo, edit kopyası/kaldırma ve yeniden açılış; yeni eşleşme çakışması, hedefi koruma, yardımcı dosyalar, özel verilerin ZIP'e girmemesi; renk oranı/eşik, palet benzerliği, nötr renkler, ölçekli decode, ICC yolu, bozuk JPEG, önbellek geçersizleşmesi, iptal ve C → sonuç → E akışı doğrulandı. Yalnızca üretilmiş JPEG ve dummy RAW kullanıldı. Günlük biçimi ve mevcut çekim klasörleri değişmedi.
+
+Bu eklemede önceki 300 çiftlik V1/V1.1 benchmark'ı tekrarlanmadı; aşağıdaki eski ölçümler bu renk özelliğinin performans ölçümü değildir. Exe hem offscreen hem Windows Qt arka ucuyla, ZIP'ten çıkarılan uygulama da Windows üzerinde geçti. [Pytest](docs/test-results.xml), [exe](docs/verification.json), [Windows](docs/verification-windows.json), [ZIP kabul testi](docs/release-verification.json). Yeni [palet önerileri](docs/colors.png) ve [ton filtresi](docs/color-filter.png) görüntüleri paketten alındı. Exe **2.610.683 bayt**; onedir **65.803.551 bayt**; dağıtım ZIP'i **26,647,460 bayt**. ZIP SHA-256: `8594eedb278cb1f937a533697b0e9ca4ac27b241801848a8697e735c69166fc7`. Önceki paketler korunur. Bu doğrulama gerçek kamera RAW içeriğini çözmez; dummy RAW kullanır.
+
+
 25 Ekim 2026 · Windows 11 x64 · Python 3.12.10 · PySide6 6.12.0 · Pillow 12.3.0
 
 **Teslim:** `dist\Ayikla\Ayikla.exe`, yanındaki `_internal\` ve `MasaustuKisayolu.ps1`. Klasörün tamamı birlikte taşınır; Python kurulumu gerekmez. Paylaşım paketi `dist\Ayikla-1.1.2b1-Windows-x64.zip`.
@@ -110,3 +123,5 @@ Gerçek R50 çekimi, SD kart/harici disk hızı, monitör renk doğruluğu ve Li
 **Ek öneriler (yalnızca öneri):** Gerçek bir R50 çekimiyle kısa kabul testi; ICC/renk yönetimini kalibre monitörde kontrol; yüksek DPI/ikinci monitör testi; uzun gerçek çekimde bağımsız yedek ve günlük büyümesi denemesi.
 
 **Kullanım için öneriler (uygulanmadı):** Benzer iki kareyi yan yana karşılaştırma; edit seçiminde E'den sonra isteğe bağlı otomatik sonraki kare. Önceliğim yan yana karşılaştırma: benzer karelerde ifade ve odak farkını görmeyi kolaylaştırır.
+
+**Yeni öneri (uygulanmadı):** Fotoğraf kulübünden birer Fuji/Sony/Olympus çekimiyle kabul testi ve farklı JPEG film simülasyonlarında renk önerilerinin karşılaştırılması. Manuel belirlenmiş bir palete göre sıralama ve yan yana karşılaştırma sonraki sürüm adaylarıdır.
