@@ -1,0 +1,13 @@
+{
+  "label": "v1",
+  "startup_first_paint": {
+    "median_ms": 1098.65,
+    "p95_ms": 1548.85,
+    "min_ms": 1058.68,
+    "max_ms": 1548.85,
+    "n": 5
+  },
+  "package_bytes": 45325338,
+  "exe_bytes": 45325338,
+  "method": "5 launches to first Qt paint; same offscreen backend; OS cache uncontrolled; no interpreter/source PATH"
+}

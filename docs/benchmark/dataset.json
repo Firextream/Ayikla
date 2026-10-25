@@ -1,0 +1,13 @@
+{
+  "generated": true,
+  "count": 300,
+  "dimensions": [
+    6000,
+    4000
+  ],
+  "mean_jpeg_bytes": 8303674.5,
+  "min_jpeg_bytes": 8303175,
+  "max_jpeg_bytes": 8304566,
+  "jpeg_quality": 40,
+  "description": "4 seeded RGB-noise templates, 300 unique EXIF timestamps; no padding"
+}

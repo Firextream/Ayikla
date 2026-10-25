@@ -12,6 +12,8 @@ def main() -> int:
     app.setApplicationName("Ayikla")
     app.setOrganizationName("Ayikla")
     window = MainWindow()
+    from .probe import install_probe
+    install_probe(window)
     window.showFullScreen()
     if smoke_output:
         from .smoke import run_smoke
