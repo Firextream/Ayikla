@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QMenu, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
 )
 
+from . import __version__
 from .core import EDIT, KEPT, REJECTED, AyiklaError, Photo, ShootSession
 from .images import ImageCache
 from .metadata import burst_hints, read_metadata
@@ -144,7 +145,7 @@ class MainWindow(QMainWindow):
         self._pool.setMaxThreadCount(1)
         self.cache = ImageCache(self)
         self.cache.loaded.connect(self._image_loaded)
-        self.setWindowTitle("Ayikla")
+        self.setWindowTitle(f"Ayikla {__version__} · Beta")
         self.setWindowIcon(app_icon())
         self.resize(1380, 900)
         self.setMinimumSize(1024, 680)
@@ -476,7 +477,7 @@ class MainWindow(QMainWindow):
         self.cache.clear()
         self.folder_label.setText(self.session.root.name)
         self.folder_label.setToolTip(str(self.session.root))
-        self.setWindowTitle(f"{self.session.root.name} — Ayikla")
+        self.setWindowTitle(f"{self.session.root.name} — Ayikla {__version__} · Beta")
         self.mode = self.session.view["mode"]
         self.pages.setCurrentIndex(1)
         recovered = self.session.recovery_count
@@ -772,7 +773,7 @@ class MainWindow(QMainWindow):
         if self.canvas.help.isVisible():
             self.canvas.help.dismiss()
         else:
-            self.canvas.help.reveal("KLAVYE\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
+            self.canvas.help.reveal(f"AYIKLA {__version__} · BETA\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
                                     "← / X / Delete   Ele → _red (dosya silinmez)\n\n"
                                     "2. TUR · EDİT / LIGHTROOM\nE   02_edit içine kopyala / edit seçimini kaldır\n\n"
                                     "Kararlar otomatik kaydedilir.\n"

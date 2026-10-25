@@ -1,4 +1,4 @@
-Ayikla 1.1.0 bundles Python 3.12, Qt / PySide6 / Shiboken 6.12,
+Ayikla 1.1.1b1 bundles Python 3.12, Qt / PySide6 / Shiboken 6.12,
 Pillow 12.3 and PyInstaller's bootloader. These components retain their own licenses.
 
 Python: https://www.python.org/psf/license/

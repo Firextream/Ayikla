@@ -13,6 +13,7 @@ from PySide6.QtGui import QColor, QFontDatabase, QImage, QKeyEvent, QLinearGradi
 from PySide6.QtWidgets import QApplication
 
 from .core import EDIT, KEPT, REJECTED
+from . import __version__
 
 
 def run_smoke(app, window, output: str) -> None:
@@ -21,6 +22,7 @@ def run_smoke(app, window, output: str) -> None:
         for name in ("segoeui.ttf", "segoeuib.ttf", "seguisym.ttf"):
             QFontDatabase.addApplicationFont(str(font_root / name))
     assert window.isFullScreen()
+    assert __version__ in window.windowTitle()
     window.showNormal()
     window.resize(1440, 960)
     directory = Path(output).resolve() / f"smoke-{uuid.uuid4().hex[:12]}"
@@ -96,7 +98,7 @@ def run_smoke(app, window, output: str) -> None:
             return
         finished = True
         timer.stop()
-        result = {"ok": error is None, "error": str(error) if error else None,
+        result = {"ok": error is None, "error": str(error) if error else None, "version": __version__,
                   "checks": checks, "elapsed_seconds": round(time.monotonic() - started, 2),
                   "directory": str(directory)}
         with (directory / "result.json").open("x", encoding="utf-8") as stream:

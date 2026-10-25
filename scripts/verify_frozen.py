@@ -34,7 +34,8 @@ if len(results) != 1:
     diagnostic = error_file.read_text("utf-8") if error_file.exists() else repr(process.stderr)
     raise SystemExit(f"EXE returned {process.returncode}; no result:\n{diagnostic}")
 result = json.loads(results[0].read_text("utf-8"))
-result["executable"] = str(executable)
+result["directory"] = Path(result["directory"]).relative_to(root).as_posix()
+result["executable"] = executable.relative_to(root).as_posix()
 result["bytes"] = executable.stat().st_size
 result["package_bytes"] = sum(path.stat().st_size for path in executable.parent.rglob("*") if path.is_file())
 result["sha256"] = hashlib.sha256(executable.read_bytes()).hexdigest()

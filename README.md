@@ -1,6 +1,8 @@
-# Ayikla 1.1
+# Ayikla 1.1.1b1 · Beta
 
 Canon RAW+JPEG çekimlerini iki turda ayıklar. **Windows x64 · Python 3.12 · PySide6.**
+
+**Kulüp denemesi:** `dist\Ayikla-1.1.1b1-Windows-x64.zip` paylaşım paketidir; kişisel son klasör ayarlarını içermez. ZIP'i tamamen çıkarıp içindeki Ayikla klasöründen başlat. [Kısa beta kılavuzu ve geri bildirim](BETA.md). Sürüm pencere başlığında ve H yardımında görünür. Önce küçük bir çekim kopyasıyla dene.
 
 **Başlat:** `dist\Ayikla\Ayikla.exe`. Python kurulumu gerekmez. **Ayikla klasörünü içindeki `_internal\` ile birlikte taşı; exe tek başına çalışmaz.** Çekim klasörünü seç veya açılıştaki son beş klasörden birine tıkla. Pencere/tam ekran durumu hatırlanır.
 
@@ -44,6 +46,8 @@ Tur sonunda sayılar, **2. tura geç** ve **02_edit klasörünü Explorer'da aç
 
 Son klasörler ve pencere ayarı ayrı, yalnızca sona eklenen `ayikla_settings.jsonl` dosyasında tutulur: exe yanında; Python ile çalıştırırken proje kökünde.
 
+Ayar dosyası okunamazsa uygulama varsayılanlarla açılır ve bir bilgi satırı gösterir; çekim günlüğü etkilenmez.
+
 Geliştirme (PowerShell, proje kökünde):
 
 ```powershell
@@ -53,6 +57,7 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pytest --basetemp .tmp\pytest-local -q
 .\build.ps1
 .\.venv\Scripts\python.exe scripts\verify_frozen.py
+.\.venv\Scripts\python.exe scripts\package_release.py
 ```
 
 Bu bilgisayarda `.tools\python312\tools\python.exe` de hazırdır; betikler otomatik bulur. Build önce yeni bir klasör oluşturur; önceki paketi silmeden `.tmp\replaced-builds\` içine taşır ve taşınabilir ayarını yeni pakete kopyalar. Yerel git deposu, remote yok.

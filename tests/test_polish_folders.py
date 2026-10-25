@@ -12,6 +12,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication, QLabel
 
 from ayikla.core import EDIT, KEPT, LOG, REJECTED
+from ayikla import __version__
 from ayikla.ui import MainWindow
 
 
@@ -56,6 +57,16 @@ def open_photos(app, window, shoot, names=("IMG_0001", "IMG_0002")):
         (shoot / f"{name}.CR3").write_bytes(b"GENERATED RAW")
     window.open_folder(shoot)
     wait(app, lambda: not window.busy and not window.canvas.image.isNull())
+
+
+def test_beta_version_visible_before_and_after_opening_and_in_fullscreen_help(app, window, shoot):
+    assert __version__ in window.windowTitle() and "Beta" in window.windowTitle()
+    open_photos(app, window, shoot)
+    assert __version__ in window.windowTitle()
+    window.showFullScreen()
+    window.toggle_help()
+    assert __version__ in window.canvas.help.text()
+    assert "BETA" in window.canvas.help.text()
 
 
 def test_folder_menu_opens_only_managed_shoot_directories(app, window, shoot, monkeypatch):
