@@ -30,7 +30,7 @@ def test_release_excludes_private_data_and_preserves_all_inputs(tmp_path, bundle
     with zipfile.ZipFile(result) as archive:
         assert archive.testzip() is None
         assert set(archive.namelist()) == {
-            "Ayikla/Ayikla.exe", "Ayikla/MasaustuKisayolu.ps1", "Ayikla/BASLANGIC.md",
+            "Ayikla/Ayikla.exe", "Ayikla/MasaustuKisayolu.ps1", "Ayikla/GETTING_STARTED.md",
             "Ayikla/_internal/Qt6Core.dll", "Ayikla/_internal/licenses/NOTICE.txt"}
         assert archive.read("Ayikla/Ayikla.exe") == b"generated executable"
         assert all(b"PRIVATE DATA" not in archive.read(name) for name in archive.namelist())

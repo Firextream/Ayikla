@@ -1,6 +1,6 @@
-# Geliştirme
+# Development
 
-Windows x64, Python 3.12. PowerShell komutlarını depo kökünde çalıştır:
+Windows x64 and Python 3.12. Run these PowerShell commands from the repository root:
 
 ```powershell
 py -3.12 -m venv .venv
@@ -13,18 +13,18 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe scripts\package_release.py
 ```
 
-Testler üretilmiş dosyalar kullanır; gerçek fotoğraflarla test çalıştırma. Farklı test çalıştırmaları için yeni bir `--basetemp` adı kullan. Projeye özgü geçici dosyaları `.tmp` altında tut.
+Tests use generated files, never real photos. Use a new `--basetemp` directory for each run. Keep project temporary files under `.tmp`.
 
-Build `.venv` Python'unu, yoksa proje içindeki `.tools\python312\tools\python.exe` yolunu kullanır. Yeni paket önce ayrı bir klasöre üretilir; önceki paket silinmeden `.tmp\replaced-builds` içine taşınır. Yerel kullanıcının taşınabilir ayarı yeni `dist\Ayikla` klasörüne kopyalanır.
+The build uses `.venv`, or the project-local `.tools/python312/tools/python.exe` fallback. It stages the new package and preserves the previous bundle in `.tmp/replaced-builds`. Local portable settings are copied into the new `dist/Ayikla` folder.
 
-`package_release.py` paylaşım ZIP'ini üretir: exe, `_internal`, kısayol betiği ve beta kılavuzu. Kişisel ayarları/çekim günlüklerini içermez. Var olan ZIP'in üzerine yazmaz; yeni sürümde uygulama, proje ve Windows dosya sürümlerini birlikte güncelle. `dist` ve geliştirici araçları git'e eklenmez; çalıştırılabilir paket GitHub Releases üzerinden dağıtılır.
+`package_release.py` creates the shareable ZIP: executable, runtime/licenses, shortcut script and English quick guide. Personal settings and shoot journals are excluded. Existing ZIPs are never overwritten. Update the app, project and Windows version fields together. `dist` and developer tools are ignored by git; executables are distributed via GitHub Releases.
 
-Ölçümleri tekrarlamak için `scripts\benchmark.py generate`, ardından `measure <etiket>` ve `startup <etiket> <exe-yolu>` kullan. Generate proje içindeki `.tmp\benchmark` altında yaklaşık 2,5 GB yapay veri üretir. [Ölçüm yöntemi ve önceki sonuçlar](../RAPOR.md).
+To reproduce benchmarks, use `scripts/benchmark.py generate`, then `measure <label>` and `startup <label> <exe-path>`. Generation writes about 2.5 GB of synthetic data under `.tmp/benchmark`. [Method and earlier results (Turkish)](../RAPOR.md).
 
-## Değişiklik sınırları
+## Change boundaries
 
-- Dosya silme ve üzerine yazma yok. Taşıma/kopyalama öncesi dayanıklı günlük zorunlu.
-- Geri alma tam yolları korumalı; yeniden açılışta çalışmalı.
-- Eşleştirme harf duyarsız; yardımcı/gizli/sistem dosyaları yok sayılır.
-- Davranış değişikliklerine regresyon testi ekle. Yeni özellikleri ayrı öneri olarak tartış.
-- Hata raporlarında gerçek fotoğraf, kişisel ayar veya tüm çekim günlüğünü isteme.
+- Never delete photos or overwrite destinations. Journal durably before moving/copying.
+- Undo must preserve exact paths and work after reopening.
+- Pair case-insensitively; ignore helper, hidden and system files.
+- Add regression coverage for behavior changes. Discuss new features separately.
+- Do not request private photos, settings or complete shoot journals in public reports.

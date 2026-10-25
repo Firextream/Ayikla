@@ -1,47 +1,49 @@
-# Ayikla 1.1.1b1 · Fotoğraf kulübü betası
+# Ayikla 1.1.2b1 · Photo club beta
 
-Canon RAW+JPEG çekimlerinde önce saklanacak kareleri, sonra Lightroom'da düzenlenecekleri seçmek için. Windows x64; bu paket Windows 11'de doğrulandı. Python kurulumu gerekmez.
+Cull Canon JPG/JPEG + CR3 shoots in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64; this build is verified on Windows 11. No Python installation required.
 
-## Başlangıç
+## Start
 
-1. ZIP'in tamamını yazabildiğin bir klasöre çıkar. `Ayikla.exe` ile `_internal` birlikte kalmalı. ZIP içinden çalıştırma.
-2. İlk denemeyi 20–50 JPG+CR3 çiftinin **ayrı bir kopyasında** yap. Ana çekimin yedeğini ayrı tut. Uygulama seçtiğin klasördeki dosyaları taşır.
-3. `Ayikla.exe` → **Klasör aç**. Doğrudan JPG'lerin bulunduğu klasörü seç; alt klasörler taranmaz.
+1. Extract the whole ZIP into a writable folder. Keep `Ayikla.exe` and `_internal` together; do not run from inside the ZIP.
+2. For your first test, use a **separate copy of 20–50 photo pairs** and keep an independent backup of your original shoot. The app moves files in the selected folder.
+3. Open `Ayikla.exe` → **Open folder**. Select the folder directly containing the JPEGs; nested folders are not scanned.
 
-Paket imzasızdır; Windows uyarısı çıkabilir. Güvenlik yazılımını kapatma. Açılmazsa uyarının metnini ve paket sürümünü bildir.
+This package is unsigned. If Windows prevents it from opening, report the warning text and version. Do not disable your security software.
 
-## İki tur
+## Two rounds
 
-| İşlem | Tuş | Sonuç |
+| Action | Key | Result |
 |---|---|---|
-| Sakla | → / Enter | JPG + varsa CR3 → `01_secilen` |
-| Ele | ← / X / Delete | Çift → `_red`; **kalıcı silme değildir** |
-| Son kararı geri al | Z | Dosyalar tam eski yollarına döner; yeniden açınca da çalışır |
-| Kararsız geç / geri git | Boşluk / ↓ / ↑ | Dosyaları değiştirmez |
-| Edit turuna geç | M | Saklananlar arasından seçim |
-| Edit için seç / kaldır | E | `02_edit` içine JPG+CR3 kopyalar; kaldırınca kopyaları arşive taşır |
-| Odak kontrolü | F; sürükle | %100 yakınlaştır / kaydır; tekrar F ile sığdır |
-| Bilgi / film şeridi / yardım | I / T / H | Paneli aç veya kapat |
-| Tam ekran | F11 | Pencere / tam ekran |
+| Keep | → / Enter | Moves JPG + matching CR3 to `01_secilen` |
+| Reject | ← / X / Delete | Moves the pair to `_red`; **not permanent deletion** |
+| Undo | Z | Restores exact original paths; works after reopening too |
+| Navigate without deciding | Space / ↓ / ↑ | Does not move photos |
+| Switch to edit picks | M | Choose from your kept photos |
+| Pick / unpick for editing | E | Copies the pair to `02_edit`; unpicking archives the copies |
+| Check focus | F; drag | 100% zoom / pan; F again to fit |
+| Info / filmstrip / help | I / T / H | Toggle the panel |
+| Full screen | F11 | Toggle window / full screen |
 
-Kararlar otomatik kaydedilir. **Klasörler** menüsü saklanan, elenen ve edit dosyalarını açar. Lightroom'a `02_edit` içeriğini kendin aktar.
+Decisions are saved automatically. **Folders** opens your kept, rejected and edit files. Import `02_edit` into Lightroom yourself. Folder names are unchanged from the Turkish release for compatibility.
 
-`_red`, `.ayikla_saklanan` ve `ayikla_log.jsonl` dosya/klasörlerini koru. Uygulama fotoğraf silmez ve var olan hedefin üzerine yazmaz. Harici değişiklikten sonra **Yeniden dene** ile tara. macOS `._` yardımcı dosyaları yok sayılır. Bozuk gerçek JPEG seçilebilir/elenebilir; karşılaşılan açılma hataları tur özetinde listelenir.
+Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Retry** to rescan after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
 
-## Beş dakikalık deneme ve geri bildirim
+## Five-minute test
 
-İki kareyi sakla, birini ele, Z ile geri al. Kapatıp aynı klasörü aç; kararlar ve Z çalışıyor mu? M → E ile bir kareyi edite ayır; `02_edit` içindeki JPG+CR3 kopyalarını kontrol et. F ile odak, I ile EXIF ve T ile film şeridini dene.
+Keep two photos, reject one, then press Z. Close and reopen the shoot: do decisions and undo still work? Press M → E and check the JPG+CR3 copies in `02_edit`. Try F for focus, I for EXIF and T for the filmstrip.
 
-Geri bildirimde şunlar yeterli:
+## Feedback
 
-- Sürüm: **1.1.1b1** (H yardımında da görünür).
-- Windows sürümü, ekran çözünürlüğü ve ölçekleme (%100/%125/%150).
-- Kamera; fotoğraf sayısı; dahili disk / harici disk / SD kart.
-- Ne yaptın? Ne bekledin? Ne oldu? Tekrar oluşuyor mu?
-- Kullanım yorumu: Sakla ile Edit ayrımı net mi? Hangi adım yavaş veya kafa karıştırıcı?
+Open a feedback or bug report at **https://github.com/Firextream/Ayikla/issues**. English and Turkish are welcome.
 
-İlk raporda fotoğraflarını, `ayikla_settings.jsonl` veya tüm karar günlüğünü paylaşma. Ekran görüntüsündeki özel yolları/adları gizle. Gerekirse yalnızca hatayı üreten yapay örnek veya izin verdiğin bir örnek istenir.
+- App version: **1.1.2b1**, also shown in H help.
+- Windows version, display resolution and scaling (100%/125%/150%).
+- Camera, photo count and storage type (internal/external/SD card).
+- What did you do? What did you expect? What happened? Can you reproduce it?
+- Was Keep vs Edit clear? Which step felt slow or confusing?
 
-## Beta sınırları
+Do not attach private photos, `ayikla_settings.jsonl` or complete decision journals. Hide personal names/paths in screenshots. Start with the error text; a small generated sample can be requested if needed.
 
-Şu an yalnızca JPG/JPEG + Canon CR3 eşlemesi var; RAW görüntüsü çözülmez. Otomatik Lightroom aktarımı yoktur. Başka bilgisayar, yüksek DPI/ikinci monitör, SD kartın çıkarılması ve gerçek elektrik kesintisi saha testleri tamamlanmadı. En küçük pencere 1024×680 mantıksal pikseldir; ekran ölçeklemesi kullanılabilir alanı azaltır. Renk doğruluğu/ICC doğrulaması yapılmadı; bu sürüm renk düzenleme aracı değildir. Sonuçlar küçük kulüp betası için, genel kararlı sürüm iddiası taşımaz.
+## Beta limits
+
+Only JPG/JPEG + Canon CR3 pairing is supported. RAW images are not decoded. Lightroom import is manual. Other computers, high DPI/multiple monitors, real card removal and physical power loss have not been field-tested. Minimum window size is 1024×680 logical pixels; scaling reduces available space. ICC/color accuracy has not been validated. This is a small-club beta, not a broadly validated stable release.

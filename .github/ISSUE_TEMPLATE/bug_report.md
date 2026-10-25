@@ -1,23 +1,25 @@
 ---
-name: Hata bildirimi
-about: Tekrarlanabilir bir sorunu bildir
-title: "[Hata] "
+name: Bug report
+about: Report a reproducible problem (English or Turkish)
+title: "[Bug] "
 labels: bug
 ---
 
-**Sürüm** (H yardımında görünür):
-**Windows / ekran çözünürlüğü / ölçekleme:**
-**Kamera / JPG+RAW biçimi / fotoğraf sayısı:**
-**Disk türü** (dahili / harici / SD):
+**App version** (shown in H help):
+**Windows / display resolution / scaling:**
+**Camera / JPG+RAW format / photo count:**
+**Storage** (internal / external / SD card):
 
-**Tekrarlama adımları**
+**Steps to reproduce**
 1.
 2.
 
-**Beklenen:**
-**Gerçekte olan ve hata metni:**
-**Her seferinde oluyor mu?**
+**Expected:**
+**Actual result and exact error message:**
+**Does it happen every time?**
 
-Fotoğraf, kişisel klasör yolu, ayar dosyası veya tüm karar günlüğünü ekleme.
-Ekran görüntüsündeki özel bilgileri gizle. Dosya taşındıysa kaynak/hedef klasör
-türünü belirtmen yeterli: çekim kökü / 01_secilen / 02_edit / _red.
+Please do not attach private photos, settings files or entire decision journals.
+Hide personal paths in screenshots. For file moves, folder types are enough:
+shoot root / 01_secilen / 02_edit / _red.
+
+English and Turkish reports are welcome.

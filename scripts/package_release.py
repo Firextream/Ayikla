@@ -35,7 +35,7 @@ def package(root: Path, filename: str | None = None) -> Path:
     # settings, journals, test reports, screenshots and photos are never added.
     inputs = [(bundle / "Ayikla.exe", "Ayikla/Ayikla.exe"),
               (bundle / "MasaustuKisayolu.ps1", "Ayikla/MasaustuKisayolu.ps1"),
-              (root / "BETA.md", "Ayikla/BASLANGIC.md")]
+              (root / "BETA.md", "Ayikla/GETTING_STARTED.md")]
     private_names = {"ayikla_settings.jsonl", "ayikla_log.jsonl", ".ayikla.lock"}
     for path in sorted(runtime.rglob("*")):
         checked(path)
