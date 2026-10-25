@@ -166,11 +166,12 @@ def measure(label: str) -> None:
         window.canvas.repaint()
         cached.append((time.perf_counter() - started) * 1000)
     uncached = []
+    refresh_options = {"rescan": False} if hasattr(window.session, "rescan") else {}
     for index in range(100, 120):
         spin(lambda: not window.cache.inflight)
         window.cache.clear()
         started = time.perf_counter()
-        window.refresh(window.photos[index].key)
+        window.refresh(window.photos[index].key, **refresh_options)
         spin(lambda: not window.canvas.image.isNull())
         window.canvas.repaint()
         uncached.append((time.perf_counter() - started) * 1000)

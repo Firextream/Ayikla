@@ -15,6 +15,7 @@ import sys
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from functools import wraps
 from pathlib import Path, PurePosixPath
 
 KEPT = "01_secilen"
@@ -107,6 +108,20 @@ def same_file(path: Path, expected: dict) -> bool:
     return path.is_file() and not is_link(path) and fingerprint(path) == expected
 
 
+def rescan_on_conflict(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except (ConflictError, FileNotFoundError):
+            try:
+                self.rescan()
+            except (AyiklaError, OSError):
+                pass  # Keep the original conflict and the last valid index.
+            raise
+    return guarded
+
+
 def move_no_replace(source: Path, target: Path) -> None:
     """Windows rename with no REPLACE_EXISTING, including the race after preflight."""
     if os.path.lexists(target):
@@ -140,6 +155,9 @@ class ShootSession:
         self.pending_id: str | None = None
         self.recovery_count = 0
         self.faulted = False
+        self._photos: dict[str, Photo] | None = None
+        self._order: tuple[str, ...] = ()
+        self._snapshot: Snapshot | None = None
         try:
             for name in (KEPT, EDIT, REJECTED, ARCHIVE, LOG, ".ayikla.lock"):
                 self._path(name)
@@ -148,7 +166,7 @@ class ShootSession:
             self._load_log()
             if self.pending_id:
                 self.recover_pending()
-            self.snapshot()  # Detect ambiguous stems before the first decision.
+            self.rescan()  # One filesystem scan on open, after journal recovery.
         except Exception:
             self.close()
             raise
@@ -187,6 +205,10 @@ class ShootSession:
 
     def _existing(self, path: Path) -> Path | None:
         """Check case-insensitively as well as catching dangling links."""
+        if sys.platform == "win32":
+            # Windows already resolves file names case-insensitively. No need to
+            # enumerate a growing target directory before every file operation.
+            return path if os.path.lexists(path) else None
         if not path.parent.exists():
             return None
         for entry in path.parent.iterdir():
@@ -325,8 +347,18 @@ class ShootSession:
         self.committed.add(transaction_id)
         self.view = self._validate_view(tx["view_after"])
         self.pending_id = None
+        if self._photos is not None:
+            effective = self.transactions[tx["undo_of"]]["action"] if action == "undo" else action
+            if effective in {"keep", "reject"}:
+                state = "pending" if action == "undo" else ("kept" if action == "keep" else "rejected")
+                paths = [self._path(op["dst"]) for op in tx["ops"]]
+                jpeg = next(path for path in paths if path.suffix.casefold() in {".jpg", ".jpeg"})
+                raw = next((path for path in paths if path.suffix.casefold() == ".cr3"), None)
+                self._photos[key] = Photo(key, jpeg, raw, state)
+                self._snapshot = None
 
-    def snapshot(self) -> Snapshot:
+    def rescan(self) -> Snapshot:
+        """Explicit refresh on open, Retry or conflict; publish only a valid scan."""
         result = Snapshot(pair_photos(self.root), pair_photos(self.root / KEPT, "kept"),
                           pair_photos(self.root / REJECTED, "rejected"))
         seen: set[str] = set()
@@ -334,7 +366,24 @@ class ShootSession:
             if photo.key in seen:
                 raise ConflictError(f"Aynı fotoğraf birden fazla klasörde: {photo.jpeg.name}")
             seen.add(photo.key)
+        photos = (*result.pending, *result.kept, *result.rejected)
+        self._photos = {photo.key: photo for photo in photos}
+        self._order = tuple(photo.key for photo in sorted(photos, key=lambda item: natural_key(item.jpeg.name)))
+        self._snapshot = result
         return result
+
+    def snapshot(self) -> Snapshot:
+        """Immutable in-memory view. No directory enumeration or filesystem reads."""
+        if self._snapshot is None:
+            assert self._photos is not None
+            photos = tuple(self._photos[key] for key in self._order)
+            self._snapshot = Snapshot(*(tuple(photo for photo in photos if photo.state == state)
+                                        for state in ("pending", "kept", "rejected")))
+        return self._snapshot
+
+    def all_photos(self) -> tuple[Photo, ...]:
+        assert self._photos is not None
+        return tuple(self._photos[key] for key in self._order)
 
     def save_view(self, mode: str, key: str | None) -> None:
         self._ensure_ready()
@@ -448,21 +497,27 @@ class ShootSession:
         if self.pending_id:
             self._finish_pending()
             self.recovery_count += 1
+        if self._photos is not None:
+            self.rescan()
 
+    @rescan_on_conflict
     def decide(self, photo: Photo, keep: bool, next_key: str | None = None) -> None:
         self._ensure_ready()
-        current = next((item for item in self.snapshot().pending if item.key == photo.key), None)
-        if current is None or current != photo:
+        current = self._photos.get(photo.key)
+        if current is None or current != photo or current.state != "pending":
             raise ConflictError("Fotoğraf artık başlangıç klasöründe değil. Klasörü yeniden aç.")
+        if photo.raw is None and photo.jpeg.with_suffix(".CR3").exists():
+            raise ConflictError("Yeni bir CR3 bulundu. Yeniden dene ile klasörü tara ve kararını tekrar ver.")
         target = self.root / (KEPT if keep else REJECTED)
         operations = [self._move_op(path, target / path.name) for path in photo.files]
         self._transaction("keep" if keep else "reject", photo.key, operations,
                           {"mode": "cull", "key": next_key})
 
+    @rescan_on_conflict
     def toggle_edit(self, photo: Photo) -> bool:
         self._ensure_ready()
-        current = next((item for item in self.snapshot().kept if item.key == photo.key), None)
-        if current is None or current != photo:
+        current = self._photos.get(photo.key)
+        if current is None or current != photo or current.state != "kept":
             raise ConflictError("Yalnızca 01_secilen içindeki fotoğraflar düzenlemeye ayrılır.")
         transaction_id = uuid.uuid4().hex
         view = {"mode": "edit", "key": photo.key}
@@ -483,6 +538,7 @@ class ShootSession:
         self._transaction("edit_mark", photo.key, operations, view, transaction_id)
         return True
 
+    @rescan_on_conflict
     def undo(self) -> bool:
         self._ensure_ready()
         if not self.stack:

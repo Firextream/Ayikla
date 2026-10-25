@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, QTimer, Signal
+from PySide6.QtCore import QObject, QRunnable, QRectF, Qt, QThreadPool, QTimer, Signal
 from PySide6.QtGui import QColor, QFont, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QFileDialog, QFrame, QHBoxLayout, QLabel, QMainWindow, QMessageBox,
@@ -92,8 +92,7 @@ class PhotoCanvas(QWidget):
             x = area.x() + (area.width() - size.width()) // 2
             y = area.y() + (area.height() - size.height()) // 2
             painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            painter.drawImage(x, y, self.image.scaled(
-                size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            painter.drawImage(QRectF(x, y, size.width(), size.height()), self.image)
         else:
             painter.setPen(QColor("#9cab9d"))
             painter.setFont(QFont("Segoe UI", 18))
@@ -293,7 +292,7 @@ class MainWindow(QMainWindow):
         self.pages.setCurrentIndex(1)
         recovered = self.session.recovery_count
         self.feedback.setText("Yarım kalan işlem güvenle tamamlandı." if recovered else self._success)
-        self.refresh(self.session.view["key"])
+        self.refresh(self.session.view["key"], rescan=False)
 
     def _operation_finished(self, _result, error):
         self.busy = False
@@ -304,7 +303,7 @@ class MainWindow(QMainWindow):
         self.feedback.setText(self._success)
         if self.session:
             self.mode = self.session.view["mode"]
-            self.refresh(self.session.view["key"])
+            self.refresh(self.session.view["key"], rescan=False)
 
     def _show_error(self, error):
         message = str(error)
@@ -326,11 +325,11 @@ class MainWindow(QMainWindow):
     def current(self) -> Photo | None:
         return self.photos[self.index] if self.photos and self.index < len(self.photos) else None
 
-    def refresh(self, preferred: str | None = None):
+    def refresh(self, preferred: str | None = None, *, rescan=True):
         if not self.session:
             return
         try:
-            snapshot = self.session.snapshot()
+            snapshot = self.session.rescan() if rescan else self.session.snapshot()
             self.photos = snapshot.pending if self.mode == "cull" else snapshot.kept
             self.index = next((i for i, photo in enumerate(self.photos) if photo.key == preferred), 0)
             if self.mode == "cull":
@@ -376,7 +375,7 @@ class MainWindow(QMainWindow):
     def _request_image(self):
         if self.current is None:
             return
-        neighbors = [self.photos[index].jpeg for offset in (1, -1, 2, -2)
+        neighbors = [self.photos[index].jpeg for offset in (1, 2, -1)
                      if 0 <= (index := self.index + offset) < len(self.photos)]
         bounds = self.canvas.size() * self.devicePixelRatioF()
         self.cache.show(self.current.jpeg, neighbors, bounds)
@@ -409,13 +408,13 @@ class MainWindow(QMainWindow):
         if self.busy or not self.session or self.session.pending_id or self.session.faulted or not self.photos:
             return
         target = min(max(0, self.index + offset), len(self.photos) - 1)
-        self.refresh(self.photos[target].key)
+        self.refresh(self.photos[target].key, rescan=False)
 
     def set_mode(self, mode: str):
         if self.busy or not self.session or self.session.pending_id or self.session.faulted:
             return
         self.mode = mode
-        self.refresh()
+        self.refresh(rescan=False)
 
     def decide(self, keep: bool):
         if not self.current or self.mode != "cull" or not self.session:
