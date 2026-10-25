@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "error": null,
+  "checks": [
+    "JPEG decode, gallery, full-screen startup and generated RAW pairing",
+    "Keep, reject missing-RAW JPEG, exact-path undo",
+    "Edit copies, archive on unmark, undo unmark",
+    "Journal reopen and persistent undo stack"
+  ],
+  "elapsed_seconds": 0.5,
+  "directory": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\.tmp\\frozen-verification\\d65b7031e323\\smoke-b1b0a79d1301",
+  "executable": "C:\\Users\\edmes\\Desktop\\03 Projeler\\Ayikla\\dist\\Ayikla.exe",
+  "bytes": 45325045,
+  "sha256": "26684eff3b64533fd4e552256e5a986581b19e6862e71d29971bbb505ad42884",
+  "exit_code": 0,
+  "source_on_path": false
+}
