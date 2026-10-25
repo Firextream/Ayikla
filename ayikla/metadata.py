@@ -7,6 +7,7 @@ from pathlib import Path
 from PIL import Image
 
 from .core import natural_key
+from .file_access import file_guard
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,11 @@ class CaptureInfo:
 
 
 def read_metadata(path: str | Path) -> CaptureInfo:
+    with file_guard(path):
+        return _read_metadata(path)
+
+
+def _read_metadata(path: str | Path) -> CaptureInfo:
     path = Path(path)
     try:
         with Image.open(path, formats=["JPEG"]) as image:

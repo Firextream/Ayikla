@@ -6,8 +6,17 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QRunnable, QSize, Qt, QThreadPool, Signal
 from PySide6.QtGui import QImage, QImageReader
 
+from .file_access import file_guard
+
 
 def read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple[QImage, str]:
+    with file_guard(path):
+        # The inner frame destroys QImageReader (and closes its QFile) before
+        # releasing the guard. Moves can then acquire it without a sharing race.
+        return _read_image(path, bounds, full_resolution)
+
+
+def _read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple[QImage, str]:
     reader = QImageReader(str(path))
     reader.setAutoTransform(True)
     size = reader.size()

@@ -18,6 +18,8 @@ from datetime import datetime, timezone
 from functools import wraps
 from pathlib import Path, PurePosixPath
 
+from .file_access import file_guard
+
 KEPT = "01_secilen"
 EDIT = "02_edit"
 REJECTED = "_red"
@@ -124,6 +126,11 @@ def rescan_on_conflict(method):
 
 def move_no_replace(source: Path, target: Path) -> None:
     """Windows rename with no REPLACE_EXISTING, including the race after preflight."""
+    with file_guard(source):
+        _native_move_no_replace(source, target)
+
+
+def _native_move_no_replace(source: Path, target: Path) -> None:
     if os.path.lexists(target):
         raise FileExistsError(f"Hedef zaten var: {target}")
     if sys.platform != "win32":
