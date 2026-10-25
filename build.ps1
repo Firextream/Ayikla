@@ -14,6 +14,12 @@ $env:PATH = @((Split-Path -Parent $pythonPath), (Join-Path $env:SystemRoot 'Syst
 New-Item -ItemType Directory -Force -Path $env:TEMP | Out-Null
 & $pythonPath -c "import runpy; runpy.run_path('scripts/make_icon.py', run_name='__main__')"
 if ($LASTEXITCODE -ne 0) { throw 'Simge üretilemedi.' }
-& $pythonPath -m PyInstaller --noconfirm Ayikla.spec
+$stagingRoot = Join-Path $PSScriptRoot ('.tmp\package-' + [guid]::NewGuid().ToString('N'))
+& $pythonPath -m PyInstaller --noconfirm --distpath $stagingRoot Ayikla.spec
 if ($LASTEXITCODE -ne 0) { throw 'Paketleme başarısız.' }
-Get-Item -LiteralPath 'dist\Ayikla.exe' | Select-Object FullName,Length
+$stagedBundle = Join-Path $stagingRoot 'Ayikla'
+Copy-Item -LiteralPath 'scripts\create_shortcut.ps1' -Destination (Join-Path $stagedBundle 'MasaustuKisayolu.ps1')
+Copy-Item -LiteralPath 'licenses' -Destination (Join-Path $stagedBundle '_internal') -Recurse -Force
+& $pythonPath 'scripts\publish_build.py' $stagedBundle
+if ($LASTEXITCODE -ne 0) { throw 'Paket yayinlanamadi. Onceki dosyalar korundu.' }
+Get-Item -LiteralPath 'dist\Ayikla\Ayikla.exe' | Select-Object FullName,Length

@@ -1,5 +1,5 @@
-Ayikla 1.0.0 bundles Python 3.12, Qt / PySide6 / Shiboken 6.12 and
-PyInstaller's bootloader. These components retain their own licenses.
+Ayikla 1.1.0 bundles Python 3.12, Qt / PySide6 / Shiboken 6.12,
+Pillow 12.3 and PyInstaller's bootloader. These components retain their own licenses.
 
 Python: https://www.python.org/psf/license/
 Qt / PySide6 / Shiboken: LGPL v3 (with applicable GPL alternatives).
@@ -10,7 +10,9 @@ PyInstaller: GPL v2 or later, with the bootloader distribution exception.
 https://pyinstaller.org/en/stable/license.html
 
 Copies of Python's license, LGPL v3, GPL v3 and PyInstaller's license are
-included in this directory and embedded in Ayikla.exe. Qt's commercial
+included in this directory, distributed under _internal/licenses. Qt's commercial
 alternative license notice, present in its wheel, is also preserved.
-The Qt runtime remains dynamically linked inside the onefile package.
-Pillow and pytest are development/test dependencies and are not bundled.
+The Qt runtime remains dynamically linked inside the onedir package.
+Pillow (MIT-CMU license): https://github.com/python-pillow/Pillow
+Pillow reads JPEG EXIF headers only; pixel decoding uses Qt.
+pytest is a development/test dependency and is not bundled.

@@ -1,6 +1,7 @@
+import os
 import sys
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import QApplication
 
 from .ui import MainWindow
@@ -12,6 +13,8 @@ def main() -> int:
     app.setApplicationName("Ayikla")
     app.setOrganizationName("Ayikla")
     window = MainWindow()
+    if os.environ.get("AYIKLA_HEADLESS_WINDOWS") == "1":
+        window.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen)
     from .probe import install_probe
     install_probe(window)
     window.show_saved_state()
