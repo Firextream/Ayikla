@@ -46,7 +46,7 @@ class Preferences:
 
     def _append(self, record: dict):
         if sys.platform != "win32":
-            raise OSError("Bu sürüm Windows içindir.")
+            raise OSError("This version requires Windows.")
         import msvcrt
         self.directory.mkdir(parents=True, exist_ok=True)
         record = {"v": 1, **record}
@@ -62,7 +62,7 @@ class Preferences:
                 stream.seek(0, os.SEEK_END)
                 payload = prefix + (json.dumps(record, ensure_ascii=False) + "\n").encode("utf-8")
                 if stream.write(payload) != len(payload):
-                    raise OSError("Ayar günlüğü tam yazılamadı.")
+                    raise OSError("Settings journal was not fully written.")
                 os.fsync(stream.fileno())
             finally:
                 stream.seek(0)

@@ -58,7 +58,7 @@ def make_photo(shoot, *, raw=True, corrupt=False):
 def test_delete_moves_pair_and_z_restores_exact_paths(app, window, shoot, raw, corrupt):
     original = make_photo(shoot, raw=raw, corrupt=corrupt)
     window.open_folder(shoot)
-    wait(app, lambda: not window.busy and ("JPEG açılamadı" in window.canvas.message
+    wait(app, lambda: not window.busy and ("Could not open JPEG" in window.canvas.message
                                          if corrupt else not window.canvas.image.isNull()))
     QTest.keyClick(window, Qt.Key.Key_Delete)
     wait(app, lambda: not window.busy and window.current is None)
@@ -94,11 +94,11 @@ def test_round_labels_and_actions_distinguish_keep_from_lightroom_copy(app, wind
     original = make_photo(shoot)
     window.open_folder(shoot)
     wait(app, lambda: not window.busy)
-    assert "Sakla" in window.keep_button.text() and "Delete" in window.reject_button.text()
-    assert "SAKLAMA" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
-    assert "_red" in window.round_hint.text() and "otomatik kaydedilir" in window.round_hint.text()
+    assert "Keep" in window.keep_button.text() and "Delete" in window.reject_button.text()
+    assert "KEEP OR REJECT" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
+    assert "_red" in window.round_hint.text() and "saved automatically" in window.round_hint.text()
     QTest.keyClick(window, Qt.Key.Key_H)
-    assert all(text in window.canvas.help.text() for text in ("Delete", "dosya silinmez", "01_secilen", "02_edit"))
+    assert all(text in window.canvas.help.text() for text in ("Delete", "no files deleted", "01_secilen", "02_edit"))
     QTest.keyClick(window, Qt.Key.Key_H)
     QTest.keyClick(window, Qt.Key.Key_Return)
     wait(app, lambda: not window.busy)
@@ -106,12 +106,12 @@ def test_round_labels_and_actions_distinguish_keep_from_lightroom_copy(app, wind
     assert not (shoot / EDIT).exists()
     QTest.keyClick(window, Qt.Key.Key_M)
     assert "LIGHTROOM" in window.round_hint.text() and "02_edit" in window.round_hint.text()
-    assert "Edit'e ayır" in window.mark_button.text()
+    assert "Pick for editing" in window.mark_button.text()
     QTest.keyClick(window, Qt.Key.Key_E)
     wait(app, lambda: not window.busy)
     assert {name: (shoot / EDIT / name).read_bytes() for name in original} == original
     assert {name: (shoot / KEPT / name).read_bytes() for name in original} == original
-    assert "Edit seçimini kaldır" in window.mark_button.text()
+    assert "Remove edit pick" in window.mark_button.text()
     before = (shoot / LOG).read_bytes()
     QTest.keyClick(window, Qt.Key.Key_Delete)
     app.processEvents()

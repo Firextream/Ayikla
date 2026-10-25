@@ -22,9 +22,9 @@ class CaptureInfo:
 
     def text(self) -> str:
         timestamp = self.taken.strftime("%d.%m.%Y  %H:%M:%S") if self.taken else "—"
-        return (f"{self.filename}\n\nÇekim     {timestamp}\nEnstantane     {self.shutter}\n"
-                f"Diyafram     {self.aperture}\nISO     {self.iso}\n"
-                f"Odak     {self.focal_length}\nLens     {self.lens}")
+        return (f"{self.filename}\n\nTaken     {timestamp}\nShutter     {self.shutter}\n"
+                f"Aperture     {self.aperture}\nISO     {self.iso}\n"
+                f"Focal length     {self.focal_length}\nLens     {self.lens}")
 
 
 def read_metadata(path: str | Path) -> CaptureInfo:
@@ -56,7 +56,7 @@ def _read_metadata(path: str | Path) -> CaptureInfo:
                 except (ValueError, TypeError, ZeroDivisionError, OverflowError):
                     return 0
             seconds, aperture, focal = number(33434), number(33437), number(37386)
-            shutter = (f"1/{round(1 / seconds)} sn" if seconds < 1 else f"{seconds:g} sn") if seconds else "—"
+            shutter = (f"1/{round(1 / seconds)} s" if seconds < 1 else f"{seconds:g} s") if seconds else "—"
             iso = values.get(34855, "—")
             if isinstance(iso, tuple):
                 iso = iso[0] if iso else "—"

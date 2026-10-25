@@ -47,11 +47,11 @@ def test_corrupt_error_card_decision_summary_and_undo(app, window, shoot, make_p
     (shoot / "Thumbs.db").write_bytes(b"metadata")
     original = (shoot / "CORRUPT.JPG").read_bytes()
     window.open_folder(shoot)
-    wait(app, lambda: not window.busy and "JPEG açılamadı" in window.canvas.message)
+    wait(app, lambda: not window.busy and "Could not open JPEG" in window.canvas.message)
     assert not hasattr(window, "last_error")
     assert window.current.key == "corrupt" and window.current.raw is not None
     assert window.session.snapshot().total == 1 and len(window.filmstrip.items) == 1
-    assert "2 macOS yardımcı dosyası (._) yok sayıldı" in window.ignored_notice.text()
+    assert "2 macOS helper files (._) ignored" in window.ignored_notice.text()
     assert not window.ignored_notice.isHidden()
     assert window.keep_button.isEnabled() and window.reject_button.isEnabled()
     QTest.keyClick(window, Qt.Key.Key_Return if keep else Qt.Key.Key_X)

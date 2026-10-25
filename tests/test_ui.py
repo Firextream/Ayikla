@@ -50,8 +50,8 @@ def test_unreadable_settings_still_allow_shoot_and_decisions(app, shoot, monkeyp
     make_jpeg(shoot, "IMG_1")
     window = MainWindow()
     try:
-        assert "okunamadı" in window.feedback.text()
-        assert "Klasör aç" in window.feedback.text()
+        assert "could not be read" in window.feedback.text()
+        assert "Open folder" in window.feedback.text()
         window.open_folder(shoot)
         wait_until(app, lambda: not window.busy and window.session is not None)
         window.decide(True)
@@ -95,7 +95,7 @@ def test_complete_keyboard_flow_and_resume(app, shoot):
         assert window.current.key == "img_1"
         QTest.keyClick(window, Qt.Key.Key_Space)
         assert window.current.key == "img_2"
-        assert "yok" in window.raw_badge.text()
+        assert "No matching CR3" in window.raw_badge.text()
         QTest.keyClick(window, Qt.Key.Key_Up)
         QTest.keyClick(window, Qt.Key.Key_Return)
         wait_until(app, lambda: not window.busy)
@@ -153,14 +153,14 @@ def test_empty_folder_and_finished_round(app, shoot):
         window.open_folder(shoot)
         wait_until(app, lambda: not window.busy)
         assert window.current is None
-        assert "bulunamadı" in window.canvas.message
+        assert "No JPG/JPEG photos found" in window.canvas.message
         assert not window.keep_button.isEnabled()
         make_jpeg(shoot, "IMG_1")
         window.refresh()
         QTest.keyClick(window, Qt.Key.Key_Return)
         wait_until(app, lambda: not window.busy)
         assert window.current is None
-        assert "tamamlandı" in window.canvas.message
+        assert "Culling complete" in window.canvas.message
         QTest.keyClick(window, Qt.Key.Key_Z)
         wait_until(app, lambda: not window.busy)
         assert window.current.key == "img_1"

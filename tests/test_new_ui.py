@@ -99,9 +99,9 @@ def test_info_burst_fading_help_and_toasts(app, window, shoot):
     open_ready(app, window, shoot)
     wait(app, lambda: len(window.metadata) == 3)
     QTest.keyClick(window, Qt.Key.Key_I)
-    assert "1/320 sn" in window.canvas.info.text()
+    assert "1/320 s" in window.canvas.info.text()
     assert "Generated lens" in window.canvas.info.text()
-    assert "Seri 1/3" in window.canvas.hud.text()
+    assert "Burst 1/3" in window.canvas.hud.text()
     QTest.qWait(1800)
     assert window.canvas.hud.effect.opacity() < .01
     assert window.canvas.info.effect.opacity() <= .26
@@ -109,7 +109,7 @@ def test_info_burst_fading_help_and_toasts(app, window, shoot):
     assert window.canvas.hud.effect.opacity() == 1
     QTest.keyClick(window, Qt.Key.Key_H)
     assert window.canvas.help.isVisible()
-    assert "KLAVYE" in window.canvas.help.text()
+    assert "KEYBOARD" in window.canvas.help.text()
     QTest.keyClick(window, Qt.Key.Key_Escape)
     assert not window.canvas.help.isVisible()
     QTest.keyClick(window, Qt.Key.Key_Question)
@@ -117,12 +117,12 @@ def test_info_burst_fading_help_and_toasts(app, window, shoot):
     QTest.keyClick(window, Qt.Key.Key_H)
     QTest.keyClick(window, Qt.Key.Key_Return)
     wait(app, lambda: not window.busy)
-    assert window.toast.text() == "Seçildi" and window.toast.isVisible()
+    assert window.toast.text() == "Kept" and window.toast.isVisible()
     QTest.qWait(1800)
     assert window.toast.effect.opacity() < .01
     QTest.keyClick(window, Qt.Key.Key_Z)
     wait(app, lambda: not window.busy)
-    assert window.toast.text() == "Geri alındı"
+    assert window.toast.text() == "Undone"
 
 
 def test_filmstrip_colors_thumbnails_click_all_states(app, window, shoot):
@@ -164,8 +164,8 @@ def test_end_screen_counts_round_two_explorer_and_final_toast(app, window, shoot
     window.decide(True)
     wait(app, lambda: not window.busy)
     assert window.viewer.currentIndex() == 1
-    assert "1 seçilen" in window.end_counts.text()
-    assert window.toast.text() == "Seçildi" and window.toast.isVisible()
+    assert "1 kept" in window.end_counts.text()
+    assert window.toast.text() == "Kept" and window.toast.isVisible()
     urls = []
     monkeypatch.setattr("ayikla.ui.QDesktopServices.openUrl", lambda url: urls.append(url.toLocalFile()) or True)
     window.explorer_button.click()
@@ -174,10 +174,10 @@ def test_end_screen_counts_round_two_explorer_and_final_toast(app, window, shoot
     assert window.mode == "edit" and window.current.key == "img_0001"
     window.toggle_edit()
     wait(app, lambda: not window.busy)
-    assert window.toast.text() == "Edit'e eklendi"
+    assert window.toast.text() == "Picked for editing"
     window.navigate(1)
-    assert window.viewer.currentIndex() == 1 and "1 düzenlemeye" in window.end_counts.text()
-    assert window.filename.text() == "2. tur özeti"
+    assert window.viewer.currentIndex() == 1 and "1 picked for editing" in window.end_counts.text()
+    assert window.filename.text() == "Round 2 summary"
     window.return_to_photos()
     assert window.current.key == "img_0001"
 
@@ -230,14 +230,14 @@ def test_retry_rescans_external_files_and_info(app, window, shoot):
 
 
 @pytest.mark.parametrize("error,fragment", [
-    (FileNotFoundError("English text"), "Disk bağlantısını"),
-    (FileExistsError("English text"), "üzerine yazılmadı"),
-    (PermissionError("English text"), "Yazma iznini"),
-    (OSError(errno.ENOSPC, "English text"), "boş alan"),
+    (FileNotFoundError("English text"), "disk connection"),
+    (FileExistsError("English text"), "nothing overwritten"),
+    (PermissionError("English text"), "write permission"),
+    (OSError(errno.ENOSPC, "English text"), "free disk space"),
 ])
 def test_actionable_turkish_errors(error, fragment):
     assert fragment in error_message(error)
-    assert "Yeniden dene" in error_message(error)
+    assert "Retry" in error_message(error)
 
 
 def test_neutral_interface():

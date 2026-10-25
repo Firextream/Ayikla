@@ -92,7 +92,7 @@ def pair_photos(folder: Path, state: str = "pending", *,
     if not folder.exists():
         return ()
     if is_link(folder) or not folder.is_dir():
-        raise ConflictError(f"Normal bir klasör gerekli: {folder}")
+        raise ConflictError(f"A regular folder is required: {folder}")
     groups: dict[str, dict[str, list[Path]]] = {}
     for path in folder.iterdir():
         reason = ignored_file_reason(path)
@@ -104,7 +104,7 @@ def pair_photos(folder: Path, state: str = "pending", *,
         if extension not in {".jpg", ".jpeg", ".cr3"}:
             continue
         if is_link(path):
-            raise ConflictError(f"Bağlantı olan fotoğraf işlenmez: {path.name}")
+            raise ConflictError(f"Linked photos cannot be processed: {path.name}")
         if not path.is_file():
             continue
         group = groups.setdefault(path.stem.casefold(), {"jpeg": [], "raw": []})
@@ -114,7 +114,7 @@ def pair_photos(folder: Path, state: str = "pending", *,
         if not group["jpeg"]:
             continue
         if len(group["jpeg"]) != 1 or len(group["raw"]) > 1:
-            raise ConflictError(f"Aynı gövde adına sahip birden fazla dosya var: {key}")
+            raise ConflictError(f"Multiple files have the same filename stem: {key}")
         photos.append(Photo(key, group["jpeg"][0],
                             group["raw"][0] if group["raw"] else None, state))
     return tuple(sorted(photos, key=lambda photo: natural_key(photo.jpeg.name)))
@@ -152,9 +152,9 @@ def move_no_replace(source: Path, target: Path) -> None:
 
 def _native_move_no_replace(source: Path, target: Path) -> None:
     if os.path.lexists(target):
-        raise FileExistsError(f"Hedef zaten var: {target}")
+        raise FileExistsError(f"Destination already exists: {target}")
     if sys.platform != "win32":
-        raise AyiklaError("Ayikla'nın güvenli taşıma motoru Windows gerektirir.")
+        raise AyiklaError("Ayikla's safe move engine requires Windows.")
     kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
     move = kernel32.MoveFileExW
     move.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint32]
@@ -170,7 +170,7 @@ class ShootSession:
     def __init__(self, root: str | Path):
         self.root = Path(root).resolve(strict=True)
         if not self.root.is_dir():
-            raise AyiklaError("Bir çekim klasörü seç.")
+            raise AyiklaError("Choose a shoot folder.")
         self._lock = None
         self._log = None
         self.transactions: dict[str, dict] = {}
@@ -217,15 +217,15 @@ class ShootSession:
         rel = PurePosixPath(relative)
         if (not relative or rel.is_absolute() or ".." in rel.parts
                 or "\\" in relative or ":" in relative):
-            raise ConflictError(f"Günlükte geçersiz yol: {relative}")
+            raise ConflictError(f"Invalid path in journal: {relative}")
         result = self.root.joinpath(*rel.parts)
         if result == self.root or not result.resolve().is_relative_to(self.root):
-            raise ConflictError(f"Çekim klasörü dışında yol: {relative}")
+            raise ConflictError(f"Path outside the shoot folder: {relative}")
         for part in (result, *result.parents):
             if part == self.root:
                 break
             if is_link(part):
-                raise ConflictError(f"Dosya/klasör bağlantısı işlenmez: {relative}")
+                raise ConflictError(f"File/folder links cannot be processed: {relative}")
         return result
 
     def _relative(self, path: Path) -> str:
@@ -246,7 +246,7 @@ class ShootSession:
 
     def _acquire_lock(self) -> None:
         if sys.platform != "win32":
-            raise AyiklaError("Bu sürüm Windows içindir.")
+            raise AyiklaError("This version requires Windows.")
         import msvcrt
         self._lock = (self.root / ".ayikla.lock").open("a+b")
         if self._lock.seek(0, os.SEEK_END) == 0:
@@ -256,7 +256,7 @@ class ShootSession:
         try:
             msvcrt.locking(self._lock.fileno(), msvcrt.LK_NBLCK, 1)
         except OSError as error:
-            raise ConflictError("Bu çekim başka bir Ayikla penceresinde açık.") from error
+            raise ConflictError("This shoot is open in another Ayikla window.") from error
 
     def _append(self, record: dict) -> None:
         assert self._log is not None
@@ -265,7 +265,7 @@ class ShootSession:
             self._log.seek(0, os.SEEK_END)
             data = (json.dumps(payload, ensure_ascii=False) + "\n").encode("utf-8")
             if self._log.write(data) != len(data):
-                raise OSError("Günlük diske tam yazılamadı.")
+                raise OSError("Journal was not fully written to disk.")
             self._log.flush()
             os.fsync(self._log.fileno())
         except OSError:
@@ -307,26 +307,26 @@ class ShootSession:
                                           (not isinstance(later, dict) or later.get("type") != "repair")
                                           for later in parsed[number:])
                     if later_operation:
-                        raise RecoveryError(f"Günlük satırı okunamıyor ({number}). Dosyalara dokunulmadı.")
+                        raise RecoveryError(f"Journal line cannot be read ({number}). Files were not changed.")
                     self._append({"type": "repair", "line": number, "fragment_hex": line.hex()})
                 continue
             try:
                 self._replay(record)
             except (KeyError, TypeError, ValueError, IndexError) as error:
-                raise RecoveryError(f"Günlük yapısı geçersiz ({number}).") from error
+                raise RecoveryError(f"Invalid journal structure ({number}).") from error
 
     def _replay(self, record: dict) -> None:
         if not isinstance(record, dict) or record.get("v") != VERSION:
-            raise RecoveryError("Desteklenmeyen günlük sürümü.")
+            raise RecoveryError("Unsupported journal version.")
         kind = record["type"]
         if kind == "begin":
             if self.pending_id or record["id"] in self.transactions:
-                raise RecoveryError("Günlükte çakışan işlem var.")
+                raise RecoveryError("Journal contains conflicting operations.")
             if record["action"] not in {"keep", "reject", "edit_mark", "edit_unmark", "undo"}:
-                raise RecoveryError("Günlükte bilinmeyen karar var.")
+                raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
                 if operation["kind"] not in {"move", "copy"}:
-                    raise RecoveryError("Günlükte bilinmeyen dosya işlemi var.")
+                    raise RecoveryError("Journal contains an unknown file operation.")
                 self._path(operation["src"])
                 self._path(operation["dst"])
                 if operation["kind"] == "copy":
@@ -336,23 +336,23 @@ class ShootSession:
             self.pending_id = record["id"]
         elif kind == "ready":
             if record["id"] != self.pending_id:
-                raise RecoveryError("Günlükte sahipsiz kopya kaydı var.")
+                raise RecoveryError("Journal contains an unmatched copy receipt.")
             self.receipts[record["id"]][record["index"]] = record["fingerprint"]
         elif kind == "commit":
             if record["id"] != self.pending_id:
-                raise RecoveryError("Günlükte sahipsiz tamamlanma kaydı var.")
+                raise RecoveryError("Journal contains an unmatched commit.")
             self._apply_commit(record["id"])
         elif kind == "view":
             self.view = self._validate_view(record["view"])
         elif kind != "repair":
-            raise RecoveryError("Günlükte bilinmeyen kayıt var.")
+            raise RecoveryError("Journal contains an unknown record.")
 
     @staticmethod
     def _validate_view(view: dict) -> dict:
         if view.get("mode") not in {"cull", "edit"}:
-            raise RecoveryError("Günlükte tur bilgisi geçersiz.")
+            raise RecoveryError("Invalid round information in journal.")
         if view.get("key") is not None and not isinstance(view["key"], str):
-            raise RecoveryError("Günlükte fotoğraf bilgisi geçersiz.")
+            raise RecoveryError("Invalid photo information in journal.")
         return dict(view)
 
     def _apply_commit(self, transaction_id: str) -> None:
@@ -360,7 +360,7 @@ class ShootSession:
         action, key = tx["action"], tx["key"]
         if action == "undo":
             if not self.stack or self.stack[-1] != tx["undo_of"]:
-                raise RecoveryError("Geri alma sırası geçersiz.")
+                raise RecoveryError("Invalid undo order.")
             target = self.transactions[self.stack.pop()]
             if target["action"] == "edit_mark":
                 self.edits.pop(key, None)
@@ -394,7 +394,7 @@ class ShootSession:
         seen: set[str] = set()
         for photo in (*result.pending, *result.kept, *result.rejected):
             if photo.key in seen:
-                raise ConflictError(f"Aynı fotoğraf birden fazla klasörde: {photo.jpeg.name}")
+                raise ConflictError(f"The same photo exists in multiple folders: {photo.jpeg.name}")
             seen.add(photo.key)
         photos = (*result.pending, *result.kept, *result.rejected)
         self._photos = {photo.key: photo for photo in photos}
@@ -407,9 +407,9 @@ class ShootSession:
     def ignored_notice(self) -> str:
         parts = []
         if count := self.ignored_files.get("appledouble", 0):
-            parts.append(f"{count} macOS yardımcı dosyası (._) yok sayıldı")
+            parts.append(f"{count} macOS helper files (._) ignored")
         if count := sum(value for reason, value in self.ignored_files.items() if reason != "appledouble"):
-            parts.append(f"{count} gizli/sistem veya yardımcı dosya yok sayıldı")
+            parts.append(f"{count} hidden/system or helper files ignored")
         return " · ".join(parts)
 
     def snapshot(self) -> Snapshot:
@@ -434,17 +434,17 @@ class ShootSession:
 
     def _ensure_ready(self) -> None:
         if self._log is None:
-            raise AyiklaError("Çekim kapalı.")
+            raise AyiklaError("The shoot is closed.")
         if self.faulted:
-            raise RecoveryError("Günlük diske yazılamadı. Disk sorununu giderip uygulamayı yeniden aç.")
+            raise RecoveryError("Journal could not be written to disk. Resolve the disk problem and reopen the app.")
         if self.pending_id:
-            raise RecoveryError("Yarım kalan işlem var. Önce Yeniden dene düğmesine bas.")
+            raise RecoveryError("An interrupted operation is pending. Press Retry first.")
 
     def _move_op(self, source: Path, target: Path, expected: dict | None = None) -> dict:
         self._path(self._relative(source))
         self._path(self._relative(target))
         if expected is not None and not same_file(source, expected):
-            raise ConflictError(f"Dosya dışarıdan değişmiş veya kayıp: {source.name}")
+            raise ConflictError(f"File was changed externally or is missing: {source.name}")
         return {"kind": "move", "src": self._relative(source),
                 "dst": self._relative(target), "fingerprint": fingerprint(source)}
 
@@ -453,20 +453,20 @@ class ShootSession:
         for op in operations:
             source, target = self._path(op["src"]), self._path(op["dst"])
             if ignored_file_reason(source):
-                raise ConflictError(f"Gizli/sistem veya yardımcı dosya işlenmez: {source.name}. "
-                                    "Yeniden dene ile klasörü tara.")
+                raise ConflictError(f"Hidden/system or helper files cannot be processed: {source.name}. "
+                                    "Press Retry to rescan the folder.")
             if not same_file(source, op["fingerprint"]):
-                raise ConflictError(f"Kaynak dosya değişmiş veya kayıp: {source.name}")
+                raise ConflictError(f"Source file was changed or is missing: {source.name}")
             if self._existing(target) is not None:
-                raise ConflictError(f"Hedef zaten var; üzerine yazılmadı: {op['dst']}")
+                raise ConflictError(f"Destination already exists; nothing overwritten: {op['dst']}")
             if op["dst"].casefold() in destinations:
-                raise ConflictError("İşlemde aynı hedef iki kez var.")
+                raise ConflictError("The operation contains the same destination twice.")
             destinations.add(op["dst"].casefold())
             for parent in target.parents:
                 if parent == self.root:
                     break
                 if parent.exists() and not parent.is_dir():
-                    raise ConflictError(f"Hedef klasör yolu bir dosya: {parent.name}")
+                    raise ConflictError(f"The destination folder path is a file: {parent.name}")
 
     def _transaction(self, action: str, key: str, operations: list[dict],
                      view_after: dict, transaction_id: str | None = None, **extra) -> None:
@@ -485,15 +485,15 @@ class ShootSession:
         existing = self._existing(target)
         if source.exists():
             if ignored_file_reason(source):
-                raise ConflictError(f"Gizli/sistem veya yardımcı dosya taşınmaz: {source.name}")
+                raise ConflictError(f"Hidden/system or helper files cannot be moved: {source.name}")
             if existing is not None:
-                raise ConflictError(f"Hedef zaten var: {operation['dst']}")
+                raise ConflictError(f"Destination already exists: {operation['dst']}")
             if not same_file(source, operation["fingerprint"]):
-                raise ConflictError(f"Dosya değişmiş: {operation['src']}")
+                raise ConflictError(f"File was changed: {operation['src']}")
             target.parent.mkdir(parents=True, exist_ok=True)
             move_no_replace(source, target)
         elif existing is None or not same_file(target, operation["fingerprint"]):
-            raise RecoveryError(f"Taşınan dosya doğrulanamadı: {operation['dst']}")
+            raise RecoveryError(f"Moved file could not be verified: {operation['dst']}")
 
     def _finish_copy(self, transaction_id: str, index: int, operation: dict) -> None:
         source, target = self._path(operation["src"]), self._path(operation["dst"])
@@ -501,11 +501,11 @@ class ShootSession:
         receipt = self.receipts[transaction_id].get(index)
         if receipt is None:
             if ignored_file_reason(source):
-                raise ConflictError(f"Gizli/sistem veya yardımcı dosya kopyalanmaz: {source.name}")
+                raise ConflictError(f"Hidden/system or helper files cannot be copied: {source.name}")
             if self._existing(target) is not None:
-                raise ConflictError(f"Kopya hedefi zaten var: {operation['dst']}")
+                raise ConflictError(f"Copy destination already exists: {operation['dst']}")
             if not same_file(source, operation["fingerprint"]):
-                raise ConflictError(f"Kopyalanacak kaynak değişmiş: {operation['src']}")
+                raise ConflictError(f"Source to copy was changed: {operation['src']}")
             if self._existing(stage) is not None:
                 # Preserve a partial copy left before a crash; never delete it.
                 saved = self._path(f"{ARCHIVE}/yarim/{uuid.uuid4().hex}/{stage.name}")
@@ -517,7 +517,7 @@ class ShootSession:
                 output_file.flush()
                 os.fsync(output_file.fileno())
             if not same_file(source, operation["fingerprint"]):
-                raise ConflictError(f"Kaynak kopyalama sırasında değişmiş: {source.name}")
+                raise ConflictError(f"Source changed while copying: {source.name}")
             shutil.copystat(source, stage)
             receipt = fingerprint(stage)
             self._append({"type": "ready", "id": transaction_id, "index": index,
@@ -540,7 +540,7 @@ class ShootSession:
 
     def recover_pending(self) -> None:
         if self.faulted:
-            raise RecoveryError("Günlük hatasından sonra uygulamayı yeniden aç.")
+            raise RecoveryError("Reopen the app after a journal error.")
         if self.pending_id:
             self._finish_pending()
             self.recovery_count += 1
@@ -552,10 +552,10 @@ class ShootSession:
         self._ensure_ready()
         current = self._photos.get(photo.key)
         if current is None or current != photo or current.state != "pending":
-            raise ConflictError("Fotoğraf artık başlangıç klasöründe değil. Klasörü yeniden aç.")
+            raise ConflictError("This photo is no longer in the shoot root. Reopen the folder.")
         raw_candidate = photo.jpeg.with_suffix(".CR3")
         if photo.raw is None and raw_candidate.is_file() and not ignored_file_reason(raw_candidate):
-            raise ConflictError("Yeni bir CR3 bulundu. Yeniden dene ile klasörü tara ve kararını tekrar ver.")
+            raise ConflictError("A new CR3 was found. Press Retry to rescan, then make the decision again.")
         target = self.root / (KEPT if keep else REJECTED)
         operations = [self._move_op(path, target / path.name) for path in photo.files]
         self._transaction("keep" if keep else "reject", photo.key, operations,
@@ -566,7 +566,7 @@ class ShootSession:
         self._ensure_ready()
         current = self._photos.get(photo.key)
         if current is None or current != photo or current.state != "kept":
-            raise ConflictError("Yalnızca 01_secilen içindeki fotoğraflar düzenlemeye ayrılır.")
+            raise ConflictError("Only photos in 01_secilen can be picked for editing.")
         transaction_id = uuid.uuid4().hex
         view = {"mode": "edit", "key": photo.key}
         if photo.key in self.edits:

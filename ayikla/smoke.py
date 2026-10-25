@@ -27,7 +27,7 @@ def run_smoke(app, window, output: str) -> None:
     window.resize(1440, 960)
     directory = Path(output).resolve() / f"smoke-{uuid.uuid4().hex[:12]}"
     directory.mkdir(parents=True, exist_ok=False)
-    shoot = directory / "Yapay çekim"
+    shoot = directory / "Sample shoot"
     shoot.mkdir()
     for index in range(1, 5):
         image = QImage(6000, 4000, QImage.Format.Format_RGB32)
@@ -57,7 +57,7 @@ def run_smoke(app, window, output: str) -> None:
         buffer = QBuffer(data)
         buffer.open(QIODevice.OpenModeFlag.WriteOnly)
         if not image.save(buffer, "JPEG", 94):
-            raise OSError("Yapay test JPEG'i üretilemedi.")
+            raise OSError("Could not generate the test JPEG.")
         buffer.close()
         exif = Image.Exif()
         exif[34665] = {36867: "2026:10:25 10:12:30", 37521: f"{index * 180:03d}",
@@ -124,8 +124,8 @@ def run_smoke(app, window, output: str) -> None:
                 assert window.session and window.current.key == "img_0001"
                 assert window.session.snapshot().total == 4
                 assert window.session.ignored_files == {"appledouble": 8, "metadata": 3}
-                assert "SAKLAMA" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
-                assert "8 macOS yardımcı dosyası (._) yok sayıldı" in window.ignored_notice.text()
+                assert "KEEP OR REJECT" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
+                assert "8 macOS helper files (._) ignored" in window.ignored_notice.text()
                 if window.canvas.image.isNull():
                     return
                 screenshot("gallery")
@@ -143,7 +143,7 @@ def run_smoke(app, window, output: str) -> None:
                     return
                 assert not window.zoomed and window.canvas.image.width() < 6000
                 key(Qt.Key.Key_I)
-                assert "1/320 sn" in window.canvas.info.text() and "Seri 1/4" in window.canvas.hud.text()
+                assert "1/320 s" in window.canvas.info.text() and "Burst 1/4" in window.canvas.hud.text()
                 screenshot("info")
                 key(Qt.Key.Key_I)
                 key(Qt.Key.Key_T)
@@ -161,7 +161,7 @@ def run_smoke(app, window, output: str) -> None:
             elif stage == 5:
                 assert (shoot / KEPT / "img_0001.cR3").exists()
                 assert window.current.key == "img_0002" and "yok" in window.raw_badge.text()
-                assert window.toast.text() == "Seçildi"
+                assert window.toast.text() == "Kept"
                 key(Qt.Key.Key_Delete)
             elif stage == 6:
                 assert (shoot / REJECTED / "IMG_0002.JPG").exists()
@@ -202,7 +202,7 @@ def run_smoke(app, window, output: str) -> None:
                 window.decide(stage != 16)
             elif stage == 18:
                 assert window.viewer.currentIndex() == 1
-                assert "3 seçilen" in window.end_counts.text() and "1 elenen" in window.end_counts.text()
+                assert "3 kept" in window.end_counts.text() and "1 rejected" in window.end_counts.text()
                 window.round2_button.click()
                 assert window.mode == "edit" and window.current is not None
                 key(Qt.Key.Key_E)
@@ -226,7 +226,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_T)
                 window.show_summary()
             elif stage == 21:
-                assert "1 düzenlemeye" in window.end_counts.text()
+                assert "1 picked for editing" in window.end_counts.text()
                 screenshot("end")
                 assert window.controls.isHidden() and window.photo_info.isHidden()
                 checks.append("End screen with kept/rejected/edit counts and round-two action")
@@ -236,7 +236,7 @@ def run_smoke(app, window, output: str) -> None:
                 window.set_mode("cull")
                 window.retry()
             elif stage == 22:
-                if "JPEG açılamadı" not in window.canvas.message:
+                if "Could not open JPEG" not in window.canvas.message:
                     return
                 assert window.current.key == "corrupt" and window.current.raw is not None
                 assert window.keep_button.isEnabled() and window.reject_button.isEnabled()

@@ -1,0 +1,3 @@
+{"v": 1, "time": "2026-10-25T14:55:04.148648+00:00", "type": "view", "view": {"mode": "cull", "key": "img_0001"}}
+{"v": 1, "time": "2026-10-25T14:55:04.153656+00:00", "type": "begin", "id": "0c0ea15ad1344d6dbe5cf07de8fb5abc", "action": "keep", "key": "img_0001", "ops": [{"kind": "move", "src": "IMG_0001.JPG", "dst": "01_secilen/IMG_0001.JPG", "fingerprint": {"fixture": "replace with generated file fingerprint"}}, {"kind": "move", "src": "IMG_0001.CR3", "dst": "01_secilen/IMG_0001.CR3", "fingerprint": {"fixture": "replace with generated file fingerprint"}}], "view_before": {"mode": "cull", "key": "img_0001"}, "view_after": {"mode": "cull", "key": null}}
+{"v": 1, "time": "2026-10-25T14:55:04.161173+00:00", "type": "commit", "id": "0c0ea15ad1344d6dbe5cf07de8fb5abc"}

@@ -171,7 +171,7 @@ def test_resume_view_undo_history_and_edit_selection(shoot, make_pair):
 
 def test_one_writer_per_shoot(shoot):
     with ShootSession(shoot):
-        with pytest.raises(ConflictError, match="başka"):
+        with pytest.raises(ConflictError, match="another"):
             ShootSession(shoot)
     with ShootSession(shoot):
         pass

@@ -119,7 +119,7 @@ def test_folder_open_failure_has_actionable_error(app, window, shoot, monkeypatc
     open_photos(app, window, shoot)
     monkeypatch.setattr("ayikla.ui.QDesktopServices.openUrl", lambda url: False)
     window.folder_actions[KEPT].trigger()
-    assert "Explorer açılamadı" in str(window.last_error)
+    assert "Could not open Explorer" in str(window.last_error)
     assert str(shoot / KEPT) in str(window.last_error)
 
 
@@ -137,7 +137,7 @@ def test_gallery_controls_and_help_fit_supported_window_sizes(app, window, shoot
     assert help_panel.isVisible() and help_panel.parentWidget() is window.centralWidget()
     assert window.centralWidget().rect().contains(help_panel.geometry())
     QTest.keyClick(window, Qt.Key.Key_H)
-    window.notify("Seçildi")
+    window.notify("Kept")
     window.toggle_filmstrip()
     app.processEvents()
     viewer_bounds = window.viewer.rect().translated(window.viewer.mapTo(window.centralWidget(), QPoint(0, 0)))

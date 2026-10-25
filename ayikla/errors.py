@@ -1,4 +1,4 @@
-"""Actionable Turkish messages for filesystem failures."""
+"""Actionable English messages for filesystem failures."""
 import errno
 
 from .core import AyiklaError, RecoveryError
@@ -7,17 +7,17 @@ from .core import AyiklaError, RecoveryError
 def error_message(error: Exception) -> str:
     code = getattr(error, "winerror", None)
     if code in (32, 33):
-        return "Dosya başka bir uygulamada açık. Lightroom veya fotoğraf görüntüleyiciyi kapatıp Yeniden dene'ye bas."
+        return "The file is open in another app. Close Lightroom or your photo viewer, then press Retry."
     if code == 112 or getattr(error, "errno", None) == errno.ENOSPC:
-        return "Diskte yeterli boş alan yok. Diskte yer açıp Yeniden dene'ye bas."
+        return "Not enough free disk space. Free up space, then press Retry."
     if isinstance(error, FileNotFoundError):
-        return "Dosya veya çekim klasörü bulunamadı. Disk bağlantısını ve klasör yolunu kontrol edip Yeniden dene'ye bas."
+        return "File or shoot folder not found. Check the disk connection and folder path, then press Retry."
     if isinstance(error, FileExistsError):
-        return "Hedef dosya zaten var; üzerine yazılmadı. Var olan dosyayı başka bir konuma taşıyıp Yeniden dene'ye bas."
+        return "Destination file already exists; nothing overwritten. Move the existing file elsewhere, then press Retry."
     if isinstance(error, PermissionError):
-        return "Klasöre erişim izni yok. Yazma iznini ve dosyanın başka uygulamada açık olmadığını kontrol edip Yeniden dene'ye bas."
-    if isinstance(error, RecoveryError) and "Günlük" in str(error):
-        return str(error) + " Günlüğü değiştirmeden sakla; uygulamayı yeniden aç. Sorun sürerse raporla."
+        return "Folder access denied. Check write permission and close other apps using the file, then press Retry."
+    if isinstance(error, RecoveryError) and "journal" in str(error).casefold():
+        return str(error) + " Preserve the journal unchanged and reopen the app. Report the problem if it continues."
     if isinstance(error, AyiklaError):
-        return str(error) + " Dosyaları ve disk bağlantısını kontrol edip Yeniden dene'ye bas."
-    return str(error) + " İşlem tamamlanmadı. Disk bağlantısını ve erişim izinlerini kontrol edip Yeniden dene'ye bas."
+        return str(error) + " Check the files and disk connection, then press Retry."
+    return str(error) + " Operation not completed. Check the disk connection and access permissions, then press Retry."

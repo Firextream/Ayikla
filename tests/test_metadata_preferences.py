@@ -24,7 +24,7 @@ def test_reads_all_exif_fields_without_decoding_pixels(tmp_path, monkeypatch):
     result = read_metadata(path)
     assert result.taken == datetime(2026, 10, 25, 12, 34, 56, 123000)
     assert (result.shutter, result.aperture, result.iso, result.focal_length, result.lens) == (
-        "1/320 sn", "f/2.8", "400", "50 mm", "Generated lens 50mm")
+        "1/320 s", "f/2.8", "400", "50 mm", "Generated lens 50mm")
     assert "IMG_001.JPG" in result.text() and "25.10.2026" in result.text()
 
 

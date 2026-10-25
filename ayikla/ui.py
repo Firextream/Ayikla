@@ -1,4 +1,4 @@
-"""Turkish keyboard-first desktop interface."""
+"""English keyboard-first desktop interface."""
 
 from __future__ import annotations
 
@@ -152,8 +152,8 @@ class MainWindow(QMainWindow):
         self.setStyleSheet(STYLE)
         self._build_ui()
         if self.preferences.read_error:
-            self.feedback.setText("Son klasörler ve pencere ayarı okunamadı. Klasör aç ile devam edebilirsin; "
-                                  "uygulama klasörünün okuma iznini kontrol et.")
+            self.feedback.setText("Recent folders and window settings could not be read. Use Open folder to continue; "
+                                  "check read permission for the app folder.")
         self._resize_timer = QTimer(self)
         self._resize_timer.setSingleShot(True)
         self._resize_timer.setInterval(180)
@@ -172,14 +172,14 @@ class MainWindow(QMainWindow):
         header.setSpacing(8)
         header.addWidget(label("AYIKLA", "brand"))
         header.addSpacing(14)
-        self.folder_label = ElidedLabel("Çekimden seçkiye.")
+        self.folder_label = ElidedLabel("From shoot to shortlist.")
         self.folder_label.setObjectName("muted")
         header.addWidget(self.folder_label, 1)
-        self.folders_button = button("Klasörler", lambda: None, "ghost")
+        self.folders_button = button("Folders", lambda: None, "ghost")
         self.folder_menu = QMenu(self)
         self.folder_actions = {}
-        for name, title in (("", "Çekim klasörü"), (KEPT, "Saklananlar · 01_secilen"),
-                            (EDIT, "Edit seçimi · 02_edit"), (REJECTED, "Elenenler · _red")):
+        for name, title in (("", "Shoot folder"), (KEPT, "Kept photos · 01_secilen"),
+                            (EDIT, "Edit picks · 02_edit"), (REJECTED, "Rejected photos · _red")):
             action = self.folder_menu.addAction(title)
             action.triggered.connect(lambda checked=False, value=name: self.open_shoot_folder(value))
             self.folder_actions[name] = action
@@ -188,13 +188,13 @@ class MainWindow(QMainWindow):
         self.folders_button.setMenu(self.folder_menu)
         self.folders_button.setEnabled(False)
         header.addWidget(self.folders_button)
-        self.open_button = button("Klasör aç", self.choose_folder, "ghost")
-        self.open_button.setToolTip("Çekim klasörü seç · Ctrl+O")
+        self.open_button = button("Open folder", self.choose_folder, "ghost")
+        self.open_button.setToolTip("Choose a shoot folder · Ctrl+O")
         header.addWidget(self.open_button)
-        self.full_button = button("Tam ekran", self.toggle_fullscreen, "ghost")
-        self.full_button.setToolTip("Tam ekran / pencere · F11")
+        self.full_button = button("Full screen", self.toggle_fullscreen, "ghost")
+        self.full_button.setToolTip("Full screen / window · F11")
         header.addWidget(self.full_button)
-        help_button = button("Yardım  ·  H", self.toggle_help, "ghost")
+        help_button = button("Help  ·  H", self.toggle_help, "ghost")
         header.addWidget(help_button)
         for control in (self.folders_button, self.open_button, self.full_button, help_button):
             control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
@@ -215,17 +215,17 @@ class MainWindow(QMainWindow):
         intro = QVBoxLayout(self.welcome_content)
         intro.setContentsMargins(0, 12, 0, 12)
         intro.setSpacing(16)
-        intro.addWidget(label("FOTOĞRAF AYIKLAMA  /  İKİ TUR", "eyebrow"))
-        intro.addWidget(label("İyi kareleri ayır.\nSeçkini hazırla.", "hero"))
-        description = label("Çekim klasörünü aç. Önce saklayacaklarını, ardından Lightroom'da\n"
-                            "düzenleyeceklerini seç. JPG ve CR3 birlikte işlenir.", "muted")
+        intro.addWidget(label("PHOTO CULLING  /  TWO ROUNDS", "eyebrow"))
+        intro.addWidget(label("Find your best frames.\nBuild your shortlist.", "hero"))
+        description = label("Open your shoot. Choose what to keep, then what to edit\n"
+                            "in Lightroom. JPG and CR3 stay together.", "muted")
         description.setWordWrap(True)
         description.setStyleSheet("font-size: 14px;")
         intro.addWidget(description)
         steps = QHBoxLayout()
         steps.setSpacing(12)
-        for number, title, text in (("01", "Sakla / Ele", "Sakla → 01_secilen\nEle / Delete → _red"),
-                                    ("02", "Edit / Lightroom", "E → 02_edit içine kopya\nLightroom'a aktarmaya hazır")):
+        for number, title, text in (("01", "Keep / Reject", "Keep → 01_secilen\nEle / Delete → _red"),
+                                    ("02", "Edit / Lightroom", "E → copy into 02_edit\nReady to import into Lightroom")):
             card = QFrame()
             card.setObjectName("stepCard")
             card_layout = QVBoxLayout(card)
@@ -236,9 +236,9 @@ class MainWindow(QMainWindow):
             card_layout.addWidget(label(text, "muted"))
             steps.addWidget(card, 1)
         intro.addLayout(steps)
-        start = button("Çekim klasörü seç", self.choose_folder, "primary")
+        start = button("Choose a shoot folder", self.choose_folder, "primary")
         intro.addWidget(start, 0, Qt.AlignmentFlag.AlignLeft)
-        intro.addWidget(label("Otomatik kayıt  ·  Z ile geri al  ·  Dosya silinmez", "muted"))
+        intro.addWidget(label("Auto-saved  ·  Z to undo  ·  No files deleted", "muted"))
         self.recent_layout = QVBoxLayout()
         self.recent_layout.setSpacing(5)
         intro.addSpacing(2)
@@ -254,7 +254,7 @@ class MainWindow(QMainWindow):
         content.setSpacing(8)
         toolbar = QHBoxLayout()
         toolbar.setSpacing(6)
-        self.cull_button = button("1  Sakla / Ele", lambda: self.set_mode("cull"))
+        self.cull_button = button("1  Keep / Reject", lambda: self.set_mode("cull"))
         self.edit_button = button("2  Edit / Lightroom  ·  M", lambda: self.set_mode("edit"))
         for control in (self.cull_button, self.edit_button):
             control.setCheckable(True)
@@ -292,10 +292,10 @@ class MainWindow(QMainWindow):
         end_layout = QVBoxLayout(self.end_card)
         end_layout.setContentsMargins(28, 24, 28, 24)
         end_layout.setSpacing(14)
-        eyebrow = label("TUR TAMAMLANDI", "eyebrow")
+        eyebrow = label("ROUND COMPLETE", "eyebrow")
         eyebrow.setAlignment(Qt.AlignmentFlag.AlignCenter)
         end_layout.addWidget(eyebrow)
-        title = label("Seçkin hazır.", "summaryTitle")
+        title = label("Your shortlist is ready.", "summaryTitle")
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         end_layout.addWidget(title)
         self.end_counts = label("", "summaryCounts")
@@ -306,18 +306,18 @@ class MainWindow(QMainWindow):
         self.end_errors.setMaximumHeight(96)
         self.end_errors.hide()
         end_layout.addWidget(self.end_errors)
-        self.round2_button = button("Edit / Lightroom seçimine geç  ·  M", lambda: self.set_mode("edit"), "primary")
+        self.round2_button = button("Choose photos for editing  ·  M", lambda: self.set_mode("edit"), "primary")
         end_layout.addWidget(self.round2_button)
-        self.explorer_button = button("02_edit klasörünü Explorer'da aç", self.open_edit_folder)
+        self.explorer_button = button("Open 02_edit in Explorer", self.open_edit_folder)
         end_layout.addWidget(self.explorer_button)
         folder_links = QHBoxLayout()
-        self.kept_folder_button = button("Saklananlar  ↗", lambda: self.open_shoot_folder(KEPT), "ghost")
-        self.rejected_folder_button = button("Elenenler  ↗", lambda: self.open_shoot_folder(REJECTED), "ghost")
+        self.kept_folder_button = button("Kept photos  ↗", lambda: self.open_shoot_folder(KEPT), "ghost")
+        self.rejected_folder_button = button("Rejected photos  ↗", lambda: self.open_shoot_folder(REJECTED), "ghost")
         folder_links.addWidget(self.kept_folder_button)
         folder_links.addWidget(self.rejected_folder_button)
         end_layout.addLayout(folder_links)
-        end_layout.addWidget(button("Fotoğraflara dön", self.return_to_photos, "ghost"))
-        end_note = label("Kararlar kaydedildi. Z ile son kararı geri alabilirsin.", "muted")
+        end_layout.addWidget(button("Back to photos", self.return_to_photos, "ghost"))
+        end_note = label("Decisions saved. Press Z to undo the last one.", "muted")
         end_note.setAlignment(Qt.AlignmentFlag.AlignCenter)
         end_layout.addWidget(end_note)
         end_body_layout.addWidget(self.end_card)
@@ -340,16 +340,16 @@ class MainWindow(QMainWindow):
         info.addWidget(self.filename)
         self.raw_badge = label("", "badge")
         info.addWidget(self.raw_badge)
-        self.edit_badge = label("DÜZENLEMEYE AYRILDI", "badge")
+        self.edit_badge = label("PICKED FOR EDITING", "badge")
         self.edit_badge.setStyleSheet("color: #dedede; background: #363636;")
         info.addWidget(self.edit_badge)
         info.addStretch(1)
         self.remaining = label("", "muted")
         info.addWidget(self.remaining)
-        self.current_folder_button = button("Klasörde aç  ↗", self.open_current_folder, "ghost")
-        self.zoom_button = button("%100  ·  F", self.toggle_zoom, "ghost")
-        self.info_button = button("Bilgi  ·  I", self.toggle_info, "ghost")
-        self.strip_button = button("Şerit  ·  T", self.toggle_filmstrip, "ghost")
+        self.current_folder_button = button("Open folder  ↗", self.open_current_folder, "ghost")
+        self.zoom_button = button("100%  ·  F", self.toggle_zoom, "ghost")
+        self.info_button = button("Info  ·  I", self.toggle_info, "ghost")
+        self.strip_button = button("Filmstrip  ·  T", self.toggle_filmstrip, "ghost")
         info.addWidget(self.current_folder_button)
         for control in (self.zoom_button, self.info_button, self.strip_button):
             info.addWidget(control)
@@ -363,38 +363,38 @@ class MainWindow(QMainWindow):
         actions = QHBoxLayout(controls)
         actions.setContentsMargins(8, 7, 8, 7)
         actions.setSpacing(6)
-        self.reject_button = button("Ele  ·  Delete", lambda: self.decide(False), "reject")
-        self.reject_button.setToolTip("JPG + varsa CR3, _red klasörüne taşınır. Z ile geri al; dosya silinmez.")
+        self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
+        self.reject_button.setToolTip("Moves JPG + matching CR3 to _red. Z to undo; no files are deleted.")
         actions.addWidget(self.reject_button)
         actions.addStretch()
-        self.previous_button = button("↑  Önceki", lambda: self.navigate(-1), "ghost")
-        self.next_button = button("Sonraki  ↓", lambda: self.navigate(1), "ghost")
-        self.next_button.setToolTip("Karar vermeden sonraki kare · Boşluk / ↓")
+        self.previous_button = button("↑  Previous", lambda: self.navigate(-1), "ghost")
+        self.next_button = button("Next  ↓", lambda: self.navigate(1), "ghost")
+        self.next_button.setToolTip("Next photo without deciding · Space / ↓")
         actions.addWidget(self.previous_button)
         actions.addWidget(self.next_button)
         actions.addStretch()
-        self.keep_button = button("Sakla  ·  → / Enter", lambda: self.decide(True), "keep")
-        self.keep_button.setToolTip("Saklanacak JPG + varsa CR3, 01_secilen klasörüne taşınır.")
+        self.keep_button = button("Keep  ·  → / Enter", lambda: self.decide(True), "keep")
+        self.keep_button.setToolTip("Moves JPG + matching CR3 to 01_secilen for keeping.")
         actions.addWidget(self.keep_button)
-        self.mark_button = button("Edit'e ayır  ·  E", self.toggle_edit, "keep")
-        self.mark_button.setToolTip("Lightroom için JPG + varsa CR3, 02_edit klasörüne kopyalanır.")
+        self.mark_button = button("Pick for editing  ·  E", self.toggle_edit, "keep")
+        self.mark_button.setToolTip("Copies JPG + matching CR3 to 02_edit for Lightroom.")
         actions.addWidget(self.mark_button)
-        self.summary_button = button("Tur özeti", self.show_summary)
+        self.summary_button = button("Round summary", self.show_summary)
         actions.addWidget(self.summary_button)
         content.addWidget(controls)
         self.pages.addWidget(gallery)
 
         footer = QHBoxLayout()
         footer.setSpacing(10)
-        self.undo_button = button("Geri al  ·  Z", self.undo, "ghost")
+        self.undo_button = button("Undo  ·  Z", self.undo, "ghost")
         footer.addWidget(self.undo_button)
-        self.feedback = label("Bir çekim klasörü seçerek başla.", "muted")
+        self.feedback = label("Choose a shoot folder to start.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
-        self.retry_button = button("Yeniden dene", self.retry, "ghost")
+        self.retry_button = button("Retry", self.retry, "ghost")
         self.retry_button.hide()
         footer.addWidget(self.retry_button)
-        footer.addWidget(label("Otomatik kayıt", "muted"))
+        footer.addWidget(label("Auto-save", "muted"))
         layout.addLayout(footer)
         self.undo_button.setEnabled(False)
         self.setCentralWidget(root)
@@ -408,7 +408,7 @@ class MainWindow(QMainWindow):
             if item.widget():
                 item.widget().deleteLater()
         if self.preferences.recent:
-            self.recent_layout.addWidget(label("SON KLASÖRLER", "muted"))
+            self.recent_layout.addWidget(label("RECENT FOLDERS", "muted"))
         for path in self.preferences.recent:
             control = button(Path(path).name, lambda checked=False, value=path: self.open_folder(value), "recent")
             control.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
@@ -436,7 +436,7 @@ class MainWindow(QMainWindow):
     def choose_folder(self):
         if self.busy:
             return
-        path = QFileDialog.getExistingDirectory(self, "Çekim klasörünü seç",
+        path = QFileDialog.getExistingDirectory(self, "Choose a shoot folder",
                                                str(self.session.root) if self.session else "")
         if path:
             self.open_folder(path)
@@ -447,7 +447,7 @@ class MainWindow(QMainWindow):
         if self.session and Path(path).resolve() == self.session.root:
             self.refresh()
             return
-        self._run(lambda: ShootSession(path), "Çekim ve günlük açılıyor…", "Çekim hazır.", opening=True)
+        self._run(lambda: ShootSession(path), "Opening shoot and journal…", "Shoot ready.", opening=True)
 
     def _run(self, operation, message: str, success: str, opening=False):
         if self.busy:
@@ -481,12 +481,12 @@ class MainWindow(QMainWindow):
         self.mode = self.session.view["mode"]
         self.pages.setCurrentIndex(1)
         recovered = self.session.recovery_count
-        self.feedback.setText("Yarım kalan işlem güvenle tamamlandı." if recovered else self._success)
+        self.feedback.setText("Interrupted operation recovered." if recovered else self._success)
         try:
             self.preferences.add_recent(self.session.root)
             self._update_recent()
         except OSError:
-            self.feedback.setText("Son klasör kaydedilemedi. Uygulama klasörüne yazma izni ver.")
+            self.feedback.setText("Recent folder could not be saved. Check write permission for the app folder.")
         self._load_metadata()
         self.refresh(self.session.view["key"], rescan=False, allow_preview=True)
 
@@ -514,17 +514,17 @@ class MainWindow(QMainWindow):
         from .errors import error_message
         message = error_message(error)
         if self.session and self.session.faulted:
-            message += "\nGünlük yazımı doğrulanamadı. Disk sorununu giderip uygulamayı yeniden aç."
+            message += "\nJournal write could not be verified. Resolve the disk problem and reopen the app."
         elif self.session and self.session.pending_id:
-            message += "\nİşlem yarım kaldı. Hedef çakışmasını veya disk sorununu giderip Yeniden dene'ye bas."
+            message += "\nThe operation is incomplete. Resolve the destination conflict or disk problem, then press Retry."
         self.feedback.setText(message)
         self._update_enabled()
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Icon.Warning)
-        box.setWindowTitle("İşlem tamamlanamadı")
+        box.setWindowTitle("Operation could not be completed")
         box.setText(message)
         box.setStandardButtons(QMessageBox.StandardButton.Ok)
-        box.button(QMessageBox.StandardButton.Ok).setText("Tamam")
+        box.button(QMessageBox.StandardButton.Ok).setText("OK")
         box.exec()
 
     @property
@@ -545,17 +545,17 @@ class MainWindow(QMainWindow):
             if allow_preview and preferred and not any(photo.key == preferred for photo in self.photos):
                 self.preview_photo = next((photo for photo in self.session.all_photos() if photo.key == preferred), None)
             if self.mode == "cull":
-                self.round_hint.setText("1. TUR · SAKLAMA: Sakla → 01_secilen · Ele / Delete → _red "
-                                        "(Z ile geri al) · Kararlar otomatik kaydedilir.")
+                self.round_hint.setText("ROUND 1 · KEEP OR REJECT: Keep → 01_secilen · Reject / Delete → _red "
+                                        "(Z to undo) · Decisions are saved automatically.")
                 position = len(snapshot.kept) + len(snapshot.rejected) + self.index + 1 if self.photos else snapshot.total
-                self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} seçilen  ·  {len(snapshot.rejected)} elenen")
-                self.remaining.setText(f"{len(snapshot.pending)} kararsız kare")
+                self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} kept  ·  {len(snapshot.rejected)} rejected")
+                self.remaining.setText(f"{len(snapshot.pending)} undecided")
             else:
-                self.round_hint.setText("2. TUR · EDİT / LIGHTROOM: E → JPG + varsa CR3 kopyası 02_edit · "
-                                        "Tekrar E: edit seçimini kaldır · Kararlar otomatik kaydedilir.")
+                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy JPG + matching CR3 to 02_edit · "
+                                        "E again: remove edit pick · Decisions are saved automatically.")
                 position = self.index + 1 if self.photos else 0
-                self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} düzenlemeye ayrılan")
-                self.remaining.setText("01_secilen → 02_edit · kopya")
+                self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} picked for editing")
+                self.remaining.setText("01_secilen → 02_edit · copy")
             self.progress.setRange(0, max(snapshot.total, 1))
             self.progress.setValue(len(snapshot.kept) + len(snapshot.rejected))
             self.cull_button.setChecked(self.mode == "cull")
@@ -564,37 +564,37 @@ class MainWindow(QMainWindow):
             self.canvas.image = QImage()
             if photo:
                 self.filename.setText(photo.jpeg.name)
-                self.raw_badge.setText("JPG + CR3" if photo.raw else "⚠ CR3 eşleşmesi yok")
+                self.raw_badge.setText("JPG + CR3" if photo.raw else "⚠ No matching CR3")
                 self.raw_badge.setStyleSheet("" if photo.raw else "color: #cccccc; background: #303030;")
                 self.raw_badge.show()
                 self.edit_badge.setVisible(photo.key in self.session.edits)
-                self.mark_button.setText("Edit seçimini kaldır  ·  E" if photo.key in self.session.edits else "Edit'e ayır  ·  E")
-                self.canvas.message = "Yükleniyor…"
+                self.mark_button.setText("Remove edit pick  ·  E" if photo.key in self.session.edits else "Pick for editing  ·  E")
+                self.canvas.message = "Loading…"
                 self.session.save_view(self.mode, photo.key)
                 self._request_image()
                 self.viewer.setCurrentIndex(0)
                 if self.preview_photo:
-                    self.counter.setText(f"{photo.jpeg.name}  ·  {'elenen kare · önizleme' if photo.state == 'rejected' else 'önizleme'}")
+                    self.counter.setText(f"{photo.jpeg.name}  ·  {'rejected photo · preview' if photo.state == 'rejected' else 'preview'}")
             else:
                 self.cache.clear()
-                self.filename.setText("1. tur tamamlandı" if self.mode == "cull" and snapshot.total else "Fotoğraf yok")
+                self.filename.setText("Round 1 complete" if self.mode == "cull" and snapshot.total else "No photos")
                 if self.summary_requested:
-                    self.filename.setText("2. tur özeti")
-                    self.counter.setText("Tur özeti")
+                    self.filename.setText("Round 2 summary")
+                    self.counter.setText("Round summary")
                 self.raw_badge.hide()
                 self.edit_badge.hide()
                 if self.mode == "cull":
-                    self.canvas.message = ("Ayıklama tamamlandı.\nM ile düzenlemeye ayıracağın kareleri seç."
-                                           if snapshot.total else "Bu klasörde JPG/JPEG fotoğraf bulunamadı.")
+                    self.canvas.message = ("Culling complete.\nPress M to choose photos for editing."
+                                           if snapshot.total else "No JPG/JPEG photos found in this folder.")
                 else:
-                    self.canvas.message = "Henüz seçilen fotoğraf yok.\n1. turda sağ ok veya Enter ile fotoğraf seç."
+                    self.canvas.message = "No kept photos yet.\nPress Right or Enter in round 1 to keep photos."
                 self.session.save_view(self.mode, None)
                 self.viewer.setCurrentIndex(1 if snapshot.total and (self.mode == "cull" or self.summary_requested) else 0)
-            self.end_counts.setText(f"{snapshot.total} kare  ·  {len(snapshot.kept)} seçilen  ·  "
-                                    f"{len(snapshot.rejected)} elenen\n{len(self.session.edits)} düzenlemeye ayrılan")
-            for name, title, count in ((KEPT, "Saklananlar", len(snapshot.kept)),
-                                       (EDIT, "Edit seçimi", len(self.session.edits)),
-                                       (REJECTED, "Elenenler", len(snapshot.rejected))):
+            self.end_counts.setText(f"{snapshot.total} total  ·  {len(snapshot.kept)} kept  ·  "
+                                    f"{len(snapshot.rejected)} rejected\n{len(self.session.edits)} picked for editing")
+            for name, title, count in ((KEPT, "Kept photos", len(snapshot.kept)),
+                                       (EDIT, "Edit picks", len(self.session.edits)),
+                                       (REJECTED, "Rejected photos", len(snapshot.rejected))):
                 self.folder_actions[name].setText(f"{title} · {name}  ({count})")
             self._update_decode_summary()
             self.round2_button.setEnabled(bool(snapshot.kept))
@@ -624,15 +624,15 @@ class MainWindow(QMainWindow):
                 self.decode_failures.add(self.current.key)
             else:
                 self.decode_failures.discard(self.current.key)
-            self.canvas.message = (f"JPEG açılamadı.\n{self.current.jpeg.name}\n{error}\n"
-                                   "Enter ile saklayabilir, Delete / X ile eleyebilirsin.") if error else ""
+            self.canvas.message = (f"Could not open JPEG.\n{self.current.jpeg.name}\n{error}\n"
+                                   "Press Enter to keep or Delete / X to reject this file.") if error else ""
             self._update_decode_summary()
             self.canvas.update()
 
     def _update_decode_summary(self):
         paths = [photo.jpeg.relative_to(self.session.root).as_posix()
                  for photo in self.session.all_photos() if photo.key in self.decode_failures]
-        self.end_errors.setPlainText("Bu oturumda açılamayan JPEG’ler "
+        self.end_errors.setPlainText("JPEGs that could not be opened in this session "
                                      f"({len(paths)}):\n" + "\n".join(paths) if paths else "")
         self.end_errors.setVisible(bool(paths))
 
@@ -708,25 +708,25 @@ class MainWindow(QMainWindow):
         remaining = list(self.photos)
         remaining.pop(self.index)
         next_key = remaining[min(self.index, len(remaining) - 1)].key if remaining else None
-        self._run(lambda: self.session.decide(photo, keep, next_key), "Dosyalar taşınıyor…",
-                  "Seçildi" if keep else "Elendi")
+        self._run(lambda: self.session.decide(photo, keep, next_key), "Moving files…",
+                  "Kept" if keep else "Rejected")
 
     def toggle_edit(self):
         if not self.current or self.mode != "edit" or not self.session or self.preview_photo:
             return
         photo = self.current
         marked = photo.key in self.session.edits
-        self._run(lambda: self.session.toggle_edit(photo), "Düzenleme seçimi kaydediliyor…",
-                  "Edit seçimi kaldırıldı; kopyalar saklandı" if marked else "Edit'e eklendi")
+        self._run(lambda: self.session.toggle_edit(photo), "Saving edit pick…",
+                  "Edit pick removed; copies archived" if marked else "Picked for editing")
 
     def undo(self):
         if self.session and self.session.stack:
-            self._run(self.session.undo, "Son karar geri alınıyor…", "Geri alındı")
+            self._run(self.session.undo, "Undoing the last decision…", "Undone")
 
     def retry(self):
         if self.session:
             self._needs_metadata_rescan = True
-            self._run(self.session.recover_pending, "Klasör ve yarım kalan işlem kontrol ediliyor…", "Klasör yenilendi")
+            self._run(self.session.recover_pending, "Checking folder and interrupted operation…", "Folder refreshed")
 
     def notify(self, message):
         self.toast.reveal(message)
@@ -766,20 +766,20 @@ class MainWindow(QMainWindow):
     def _show_info(self):
         if self.current:
             info = self.metadata.get(self.current.key)
-            self.canvas.info.reveal(info.text() if info else f"{self.current.jpeg.name}\nEXIF bilgisi okunuyor…")
+            self.canvas.info.reveal(info.text() if info else f"{self.current.jpeg.name}\nReading EXIF…")
             self.canvas.position_overlays()
 
     def toggle_help(self):
         if self.canvas.help.isVisible():
             self.canvas.help.dismiss()
         else:
-            self.canvas.help.reveal(f"KLAVYE · AYIKLA {__version__} · BETA\n\n1. TUR · SAKLAMA\n→ / Enter   Sakla → 01_secilen\n"
-                                    "← / X / Delete   Ele → _red (dosya silinmez)\n\n"
-                                    "2. TUR · EDİT / LIGHTROOM\nE   02_edit içine kopyala / edit seçimini kaldır\n\n"
-                                    "Kararlar otomatik kaydedilir.\n"
-                                    "Boşluk / ↓   Sonraki     ↑   Önceki\nZ   Geri al     M   Turu değiştir\n"
-                                    "F   %100 / Sığdır     Sürükle   Kaydır\nI   Çekim bilgisi     T   Film şeridi\n"
-                                    "H / ?   Yardım     Esc   Yardımı / yakınlaştırmayı kapat\nF11   Tam ekran     Ctrl+O   Klasör aç",
+            self.canvas.help.reveal(f"KEYBOARD · AYIKLA {__version__} · BETA\n\nROUND 1 · KEEP OR REJECT\n→ / Enter   Keep → 01_secilen\n"
+                                    "← / X / Delete   Reject → _red (no files deleted)\n\n"
+                                    "ROUND 2 · EDIT / LIGHTROOM\nE   copy to 02_edit / remove edit pick\n\n"
+                                    "Decisions are saved automatically.\n"
+                                    "Space / ↓   Next     ↑   Previous\nZ   Undo     M   Switch round\n"
+                                    "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip\n"
+                                    "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder",
                                     auto_fade=False)
             self.canvas.position_overlays()
 
@@ -799,7 +799,7 @@ class MainWindow(QMainWindow):
             self.canvas.info.dismiss()
             return
         hint = self.bursts.get(photo.key)
-        parts = ([f"Seri {hint[0]}/{hint[1]}"] if hint else []) + (["%100 · sürükleyerek kaydır · F sığdır"] if self.zoomed else [])
+        parts = ([f"Burst {hint[0]}/{hint[1]}"] if hint else []) + (["100% · drag to pan · F to fit"] if self.zoomed else [])
         if parts:
             self.canvas.hud.reveal("  ·  ".join(parts))
         else:
@@ -859,11 +859,11 @@ class MainWindow(QMainWindow):
             return
         try:
             if name not in {"", KEPT, EDIT, REJECTED}:
-                raise AyiklaError("Yalnızca bu çekimin klasörleri açılabilir.")
+                raise AyiklaError("Only folders inside this shoot can be opened.")
             path = self.session._path(name) if name else self.session.root
             path.mkdir(exist_ok=True)
             if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(path))):
-                raise OSError(f"Explorer açılamadı. Klasörü elle aç: {path}")
+                raise OSError(f"Could not open Explorer. Open this folder manually: {path}")
         except (OSError, AyiklaError) as error:
             self._show_error(error)
 
@@ -913,7 +913,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         if self.busy:
-            self.feedback.setText("Dosya işlemi sürüyor; tamamlanınca pencereyi kapatabilirsin.")
+            self.feedback.setText("A file operation is running. Close the window once it finishes.")
             event.ignore()
             return
         self.cache.close()
@@ -924,7 +924,7 @@ class MainWindow(QMainWindow):
             self.preferences.save_window([rectangle.x(), rectangle.y(), rectangle.width(), rectangle.height()],
                                          self.isFullScreen(), self.isMaximized())
         except OSError:
-            self.feedback.setText("Pencere ayarı kaydedilemedi. Uygulama klasörüne yazma izni ver.")
+            self.feedback.setText("Window settings could not be saved. Check write permission for the app folder.")
         if self.session:
             self.session.close()
         event.accept()

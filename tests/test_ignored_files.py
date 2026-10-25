@@ -106,7 +106,7 @@ def test_2180_card_entries_report_1090_helpers(shoot, make_pair):
     assert len(list(shoot.iterdir())) == 2180
     with ShootSession(shoot) as session:
         assert session.snapshot().total == 545
-        assert session.ignored_notice == "1090 macOS yardımcı dosyası (._) yok sayıldı"
+        assert session.ignored_notice == "1090 macOS helper files (._) ignored"
         assert all(photo.raw is not None for photo in session.all_photos())
 
 
@@ -149,7 +149,7 @@ def test_newly_hidden_source_is_never_moved_or_copied(shoot, make_pair, action):
         operation = {"keep": lambda: session.decide(photo, True),
                      "edit": lambda: session.toggle_edit(photo), "undo": session.undo}[action]
         before = (shoot / LOG).read_bytes()
-        with pytest.raises(ConflictError, match="Gizli/sistem"):
+        with pytest.raises(ConflictError, match="Hidden/system"):
             operation()
         assert photo.jpeg.exists() and photo.raw.exists()
         assert (shoot / LOG).read_bytes() == before
