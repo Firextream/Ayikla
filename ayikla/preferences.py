@@ -13,12 +13,21 @@ class Preferences:
         self.path = self.directory / "ayikla_settings.jsonl"
         self.recent: list[str] = []
         self.window: dict = {}
-        if self.path.exists():
-            for line in self.path.read_bytes().splitlines():
-                try:
-                    self._apply(json.loads(line))
-                except (ValueError, TypeError, KeyError, UnicodeDecodeError):
-                    continue  # Preferences never affect the shoot journal's recovery.
+        self.read_error = False
+        try:
+            data = self.path.read_bytes()
+        except FileNotFoundError:
+            data = b""
+        except OSError:
+            # Portable settings may be unreadable on another computer. They are
+            # optional; never let them prevent opening a shoot and its journal.
+            self.read_error = True
+            data = b""
+        for line in data.splitlines():
+            try:
+                self._apply(json.loads(line))
+            except (ValueError, TypeError, KeyError, UnicodeDecodeError):
+                continue  # Preferences never affect the shoot journal's recovery.
 
     def _apply(self, record: dict):
         if not isinstance(record, dict) or record.get("v") != 1:

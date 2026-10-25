@@ -1,4 +1,7 @@
 from datetime import datetime, timedelta
+from pathlib import Path
+
+import pytest
 
 from PIL import Image, TiffImagePlugin
 
@@ -89,3 +92,25 @@ def test_invalid_window_geometry_ignored(tmp_path):
     path = tmp_path / "ayikla_settings.jsonl"
     path.write_text('{"v":1,"type":"window","geometry":[0,0,-1,9]}\nnull\n', "utf-8")
     assert Preferences(tmp_path).window == {}
+
+
+@pytest.mark.parametrize("failure", [PermissionError, OSError])
+def test_unreadable_preferences_do_not_block_startup_or_modify_settings(tmp_path, monkeypatch, failure):
+    path = tmp_path / "ayikla_settings.jsonl"
+    original = b'{"v":1,"type":"recent","path":"private shoot"}\n'
+    path.write_bytes(original)
+    read_bytes = Path.read_bytes
+    def denied(item):
+        if item == path:
+            raise failure("simulated unreadable settings")
+        return read_bytes(item)
+    monkeypatch.setattr(Path, "read_bytes", denied)
+    preferences = Preferences(tmp_path)
+    assert preferences.read_error
+    assert preferences.recent == [] and preferences.window == {}
+    assert read_bytes(path) == original
+
+
+def test_missing_preferences_are_normal_first_start(tmp_path):
+    preferences = Preferences(tmp_path)
+    assert not preferences.read_error and not preferences.path.exists()

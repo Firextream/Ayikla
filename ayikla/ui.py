@@ -150,6 +150,9 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1024, 680)
         self.setStyleSheet(STYLE)
         self._build_ui()
+        if self.preferences.read_error:
+            self.feedback.setText("Son klasörler ve pencere ayarı okunamadı. Klasör aç ile devam edebilirsin; "
+                                  "uygulama klasörünün okuma iznini kontrol et.")
         self._resize_timer = QTimer(self)
         self._resize_timer.setSingleShot(True)
         self._resize_timer.setInterval(180)

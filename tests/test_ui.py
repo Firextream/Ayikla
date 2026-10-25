@@ -42,6 +42,27 @@ def make_jpeg(folder: Path, name: str, raw=True):
         (folder / f"{name}.CR3").write_bytes(b"generated dummy raw")
 
 
+def test_unreadable_settings_still_allow_shoot_and_decisions(app, shoot, monkeypatch):
+    from ayikla.preferences import Preferences
+    preferences = Preferences()
+    preferences.read_error = True
+    monkeypatch.setattr("ayikla.ui.Preferences", lambda: preferences)
+    make_jpeg(shoot, "IMG_1")
+    window = MainWindow()
+    try:
+        assert "okunamadı" in window.feedback.text()
+        assert "Klasör aç" in window.feedback.text()
+        window.open_folder(shoot)
+        wait_until(app, lambda: not window.busy and window.session is not None)
+        window.decide(True)
+        wait_until(app, lambda: not window.busy)
+        assert (shoot / KEPT / "IMG_1.JPG").exists()
+        assert (shoot / KEPT / "IMG_1.CR3").exists()
+    finally:
+        wait_until(app, lambda: not window.busy)
+        window.close()
+
+
 @pytest.mark.parametrize("orientation,dimensions", [
     (1, (80, 40)), (2, (80, 40)), (3, (80, 40)), (4, (80, 40)),
     (5, (40, 80)), (6, (40, 80)), (7, (40, 80)), (8, (40, 80)),
