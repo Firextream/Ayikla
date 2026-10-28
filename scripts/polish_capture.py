@@ -12,6 +12,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
+def show_import_progress(dialog):
+    """What a running import shows, without copying anything."""
+    dialog.update_progress(142, 380, "IMG_0142.CR3")
+
+
 def capture(output, scale, check=False):
     os.environ["QT_SCALE_FACTOR"] = str(scale)
     os.environ["QT_QPA_PLATFORM"] = "windows"
@@ -59,10 +64,22 @@ def capture(output, scale, check=False):
                                    "pixels": [pixmap.width(), pixmap.height()],
                                    "dpr": pixmap.devicePixelRatio(), "photo_height": window.canvas.height()}
         if check:
-            from scripts.polish_checks import check_start, check_gallery, check_compare, check_summary
-            validator = {"start": check_start, "round1": check_gallery, "round2": check_gallery,
-                         "burst": check_compare, "summary": check_summary}[name]
-            report["screens"][name]["checks"] = validator(widget)
+            from scripts import polish_checks
+            validator = {"start": "check_start", "round1": "check_gallery", "round2": "check_gallery",
+                         "burst": "check_compare", "summary": "check_summary", "import": "check_import",
+                         "keys": "check_keys"}.get(name)
+            if validator and hasattr(polish_checks, validator):
+                report["screens"][name]["checks"] = getattr(polish_checks, validator)(widget)
+
+    def save_sheet():
+        # The contact sheet is a file, not a widget: the exported JPEG is the screenshot.
+        sheet = next((shoot / "02_edit").glob("contact_sheet_*.jpg"))
+        image = QImage(str(sheet))
+        target = output / "contact.png"
+        if target.exists():
+            raise FileExistsError(target)
+        assert image.save(str(target))
+        report["screens"]["contact"] = {"pixels": [image.width(), image.height()], "source": sheet.name}
 
     try:
         snap("start")
@@ -94,9 +111,11 @@ def capture(output, scale, check=False):
                                33437: TiffImagePlugin.IFDRational(28, 10), 34855: 400}
                 source.save(path, exif=exif)
             path.with_suffix(".CR3").write_bytes(b"GENERATED RAW DATA")
+        # a standalone film scan without EXIF (contact sheet: filename only)
+        Image.linear_gradient("L").resize((900, 600)).save(shoot / "SCAN_0005.tif")
         (shoot / "._IMG_0001.JPG").write_bytes(b"GENERATED HELPER")
         window.open_folder(shoot)
-        wait(lambda: not window.busy and not window.canvas.image.isNull() and len(window.metadata) == 4)
+        wait(lambda: not window.busy and not window.canvas.image.isNull() and len(window.metadata) == 5)
         snap("round1")
         window.open_compare()
         dialog = window.compare
@@ -104,7 +123,7 @@ def capture(output, scale, check=False):
         wait(lambda: all(not pane.image.isNull() for pane in dialog.panes))
         snap("burst", dialog)
         dialog.reject()
-        for keep in (True, True, True, False):
+        for keep in (True, True, True, False, True):
             window.decide(keep)
             wait(lambda: not window.busy)
         window.set_mode("edit")
@@ -112,9 +131,37 @@ def capture(output, scale, check=False):
         window.toggle_edit()
         wait(lambda: not window.busy and not window.canvas.image.isNull())
         snap("round2")
+        for _ in range(2):  # IMG_0003 and the scan join the picks for the contact sheet
+            window.navigate(1)
+            wait(lambda: not window.canvas.image.isNull())
+        window.toggle_edit()
+        wait(lambda: not window.busy)
+        window.navigate(1)
+        wait(lambda: not window.busy)
+        window.toggle_edit()
+        wait(lambda: not window.busy)
         window.show_summary()
         wait(lambda: not window.busy)
         snap("summary")
+        window.export_contact_sheet()
+        wait(lambda: not window.busy and any((shoot / "02_edit").glob("contact_sheet_*.jpg")))
+        save_sheet()
+        # import dialog mid-copy, with the long card paths that used to be cut from the left
+        card = fixture / "Card reader" / "PHOTO-CLUB-SD-2026" / "DCIM" / "100CANON"
+        card.mkdir(parents=True)
+        archive = fixture / "Photo club archive" / "Imported shoots"
+        archive.mkdir(parents=True)
+        window.choose_import()
+        importer = window.import_dialog
+        importer.setAttribute(Qt.WidgetAttribute.WA_DontShowOnScreen)
+        importer.source.setText(str(card))
+        importer.destination.setText(str(archive))
+        importer.name.setText("club")
+        show_import_progress(importer)
+        wait(lambda: importer.isVisible())
+        snap("import", importer)
+        importer.progress.setRange(0, 1)
+        importer.reject()
         (output / "capture.json").write_text(json.dumps(report, indent=2), "utf-8")
     finally:
         if window.compare:

@@ -1,0 +1,158 @@
+{
+  "version": "1.5.0b1",
+  "backend": "windows",
+  "scale": 1.0,
+  "screens": {
+    "start": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 391,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "cards": [
+          {
+            "card_height": 125,
+            "body_height": 34,
+            "needed": 34
+          },
+          {
+            "card_height": 125,
+            "body_height": 34,
+            "needed": 34
+          }
+        ]
+      }
+    },
+    "round1": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 42,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.83,
+          3.83,
+          3.73
+        ],
+        "photo_height": 768
+      }
+    },
+    "burst": {
+      "logical": [
+        1200,
+        800
+      ],
+      "pixels": [
+        1200,
+        800
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "selection_border": 2,
+        "number_badges_on_images": true,
+        "button_height": 34,
+        "button_gaps": 12
+      }
+    },
+    "round2": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 42,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.83,
+          3.83,
+          3.73
+        ],
+        "photo_height": 768
+      }
+    },
+    "summary": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "photo_controls_hidden": true,
+        "summary_width": 520
+      }
+    },
+    "contact": {
+      "pixels": [
+        1800,
+        602
+      ],
+      "source": "contact_sheet_2026-10-29.jpg"
+    },
+    "import": {
+      "logical": [
+        650,
+        330
+      ],
+      "pixels": [
+        650,
+        330
+      ],
+      "dpr": 1.0,
+      "photo_height": 768
+    }
+  }
+}
