@@ -1,3 +1,4 @@
+import time
 import pytest
 from PySide6.QtCore import QSize
 from PySide6.QtGui import QColor, QImage, QColorSpace
@@ -137,7 +138,7 @@ def test_edit_browser_keyboard_jump_and_error_summary(shoot):
             app.processEvents()
             if predicate():
                 return
-            QTest.qWait(10)
+            time.sleep(.01)  # Let Python file-operation workers acquire the GIL.
         assert predicate()
     try:
         window.open_folder(shoot)

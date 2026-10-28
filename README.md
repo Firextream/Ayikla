@@ -4,9 +4,12 @@
 
 A simple, keyboard-first Windows photo culling app for RAW+JPEG shoots. First choose what to keep, then pick what to edit in Lightroom.
 
-**Windows x64 · English interface · JPG/JPEG + common camera RAW formats · 1.2.0b1 Beta**
+**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.3.0b1 Beta**
 
-### [Download for Windows · ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
+### [Latest published download · 1.2.0b1 · Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
+
+1.3.0b1 is a local beta candidate; its release has not been tagged or published.
+Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
 
 [Release notes](https://github.com/Firextream/Ayikla/releases/tag/v1.2.0b1) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
 
@@ -45,6 +48,10 @@ Folder names stay the same as earlier Turkish builds so existing shoots and jour
 | M | Switch between culling and edit picks |
 | E | Round 2: copy to `02_edit`; press again to remove the edit pick |
 | C | Round 2: color ideas — tone filter and similar palettes |
+| B | Compare the current burst: 2 panes for two frames, 4 for larger bursts |
+| 1–4 in compare | Select the keeper in the current page; no files change yet |
+| Shift+Enter in compare | Keep selected, reject the rest of the entire burst; one Z undoes the group |
+| ← / → in compare | Previous / next page of a large burst |
 | F | 100% focus check / fit to window |
 | Drag with left mouse button | Pan while zoomed in |
 | I | EXIF: filename, time, shutter, aperture, ISO, focal length, lens |
@@ -54,15 +61,52 @@ Folder names stay the same as earlier Turkish builds so existing shoots and jour
 | F11 | Toggle full screen |
 | Esc | Close help, then leave zoom, then leave full screen |
 
+In burst compare, F changes zoom in every pane and dragging pans them together.
+Esc returns to the kept frame after confirmation. Existing edit picks must be
+unmarked before changing a burst decision. Burst detection uses consecutive
+capture times at most one second apart; suggestions never decide for you.
+
+## Lightroom sidecars
+
+**Settings → Write Lightroom XMP sidecars** is on by default. Keep writes one
+star and a Pick flag (`xmpDM:pick=1`); edit copies in `02_edit` get three stars;
+Reject writes `xmp:Rating=-1` and `xmpDM:pick=-1`. The sidecar uses the RAW stem,
+or the JPEG/TIFF stem when there is no RAW. Image files are never edited.
+Existing XMP is archived in `.ayikla_saklanan` before replacement. Other fields,
+including Camera Raw settings, color labels, comments and formatting, survive.
+Undo restores the exact prior XMP bytes, even after restarting or disabling XMP.
+Malformed or unsupported XMP blocks the decision with an error instead of losing metadata.
+
+Import the edit folder manually, or use Lightroom's **Metadata → Read Metadata
+from Files** for already imported photos. Lightroom Classic 13.2 introduced XMP
+flag support ([Adobe documentation](https://helpx-origin.aws116.adobeitc.com/ie/lightroom-classic/help/flag-label-rate-photos.html)).
+JPEG/TIFF sidecar handling can vary between editors; test the handoff in your
+Lightroom version. Ayikla never embeds metadata into JPEG, TIFF or DNG files.
+
+## Film scans and writing-app handoff
+
+Standalone JPG/JPEG and TIF/TIFF files work automatically, including mixed
+folders with RAW pairs. The same move/copy/undo controls apply. Missing EXIF
+fields show “—”. TIFF previews use Pillow's thumbnail/reduction path; 16-bit
+grayscale is downconverted only for display, and Color ideas also accepts TIFF.
+Some TIFF codecs must decode the original before reducing it, so large scans
+can use substantial transient memory. Multipage TIFF previews use the first page.
+
+Edit-pick changes and the round 2 summary write/refresh
+`02_edit/ayikla_picks.json`, including capture metadata, palette swatches and an
+empty caption. Yazı can consume it independently; see the
+[versioned schema](docs/picks-schema.md). The previous JSON is archived and
+selection undo restores it.
+
 ## Color ideas for your next post
 
 In **round 2**, press **C** or **Color ideas**. Choose a tone (red, orange, yellow, green, teal, blue, purple, pink, dark, neutral or light), then require it to cover at least 15%, 30% or 50% of the frame. Or choose **Similar palette to current photo** to find frames that could work together in a post.
 
-Up to 24 matches show thumbnails, palette swatches and color coverage or palette overlap. Click a frame to return to it, then **E** to pick it for editing. Suggestions never automatically select, move or copy anything. Unreadable JPEGs are skipped and listed in the round summary. Analysis runs locally in the background; closing the panel cancels it. Unchanged JPEG descriptors are reused for the current app session.
+Up to 24 matches show thumbnails, palette swatches and color coverage or palette overlap. Click a frame to return to it, then **E** to pick it for editing. Suggestions never automatically select, move or copy anything. Unreadable photos are skipped and listed in the round summary. Analysis runs locally in the background; closing the panel cancels it. Unchanged image descriptors are reused for the current app session.
 
 ![Similar palettes among kept photos](docs/colors.png)
 
-These are approximate JPEG color matches, not assessments of composition or photographic quality. Recognized embedded color profiles are converted to sRGB for analysis; untagged JPEGs are treated as sRGB. The camera's JPEG style and lighting influence the suggestions. This does not change the photos or apply a grade to RAW files.
+These are approximate preview color matches, not assessments of composition or photographic quality. Recognized embedded color profiles are converted to sRGB for analysis; untagged images are treated as sRGB. Camera style, scan processing and lighting influence the suggestions. This does not change the photos or apply a grade to RAW files.
 
 ## Camera support
 
@@ -77,7 +121,7 @@ These are approximate JPEG color matches, not assessments of composition or phot
 | Pentax / Samsung | PEF, SRW |
 | DNG cameras / phones | DNG |
 
-A matching **JPG/JPEG with the same filename stem** is required. RAW files are moved/copied as opaque files; they are not decoded, and support is not a claim that every camera model has been field-tested. RAW-only, HEIC and differently named JPEG/RAW pairs are not supported. If multiple RAW formats share one JPEG stem, Ayikla reports a conflict rather than guessing. Existing shoot folders and journals remain compatible.
+A matching **JPG/JPEG with the same filename stem** is required for RAW pairing. RAW files are moved/copied as opaque files; they are not decoded, and support is not a claim that every camera model has been field-tested. Standalone JPEG/TIFF scans also work. RAW-only, HEIC and differently named JPEG/RAW pairs are not supported. If multiple RAW formats share one preview stem, Ayikla reports a conflict rather than guessing. Existing shoot folders and journals remain readable; shoots using new 1.3 operations require 1.3 or later.
 
 ## Inspect your photos and reach your files
 
@@ -85,7 +129,7 @@ The **Folders** menu opens the shoot, kept, rejected or edit folder in Explorer 
 
 Filmstrip edges: **green = kept, red = rejected, purple = picked for editing**. Rejected photos can be previewed; decision keys are disabled during that preview. Capture times within one second show a **Burst 2/5** hint. Missing EXIF fields show “—”.
 
-Normal previews and thumbnails use scaled decoding; full-resolution decoding is used only for 100% zoom. The last five folders and window/fullscreen state are remembered.
+Normal JPEG previews and thumbnails use scaled decoding; full-resolution output is requested only for 100% zoom. TIFF previews are reduced through Pillow, with the codec memory limitation described above. The last five folders and window/fullscreen state are remembered.
 
 <details>
 <summary>See focus check, EXIF, filmstrip and round summary</summary>

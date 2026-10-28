@@ -172,8 +172,11 @@ def _native_move_no_replace(source: Path, target: Path) -> None:
 class ShootSession:
     """One locked shoot. Close explicitly, or use as a context manager."""
 
-    def __init__(self, root: str | Path, *, write_xmp: bool = False):
+    def __init__(self, root: str | Path, *, write_xmp: bool = False,
+                 export_picks: bool = False, palette_cache: dict | None = None):
         self.write_xmp = write_xmp
+        self.export_picks = export_picks
+        self.palette_cache = palette_cache if palette_cache is not None else {}
         self.root = Path(root).resolve(strict=True)
         if not self.root.is_dir():
             raise AyiklaError("Choose a shoot folder.")
@@ -329,7 +332,7 @@ class ShootSession:
         if kind == "begin":
             if self.pending_id or record["id"] in self.transactions:
                 raise RecoveryError("Journal contains conflicting operations.")
-            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo"}:
+            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo", "picks_refresh"}:
                 raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
                 if operation["kind"] not in {"move", "copy", "write"}:
@@ -381,7 +384,7 @@ class ShootSession:
                 self.edits.pop(key, None)
             elif target["action"] == "edit_unmark":
                 self.edits[key] = target["mark_id"]
-        else:
+        elif action != "picks_refresh":
             self.stack.append(transaction_id)
             if action == "edit_mark":
                 self.edits[key] = transaction_id
@@ -648,6 +651,36 @@ class ShootSession:
         operations.append(self._write_op(destination, merged, transaction_id))
         return operations
 
+    def _picks_ops(self, keys: set[str], transaction_id: str) -> list[dict]:
+        if not self.export_picks:
+            return []
+        from .picks import serialize
+        content = serialize((photo for photo in self.all_photos() if photo.key in keys), self.palette_cache)
+        target = self._path(f"{EDIT}/ayikla_picks.json")
+        existing = self._existing(target)
+        operations = []
+        if existing:
+            expected = fingerprint(existing)
+            previous = existing.read_bytes()
+            if not same_file(existing, expected):
+                raise ConflictError("Picks JSON changed while reading it.")
+            if previous == content:
+                return []
+            saved = self._path(f"{ARCHIVE}/picks/{transaction_id}/ayikla_picks.json")
+            operations.append(self._move_op(existing, saved, expected))
+        operations.append(self._write_op(target, content, transaction_id))
+        for operation in operations:
+            operation["role"] = "picks"
+        return operations
+
+    def refresh_picks(self) -> str:
+        self._ensure_ready()
+        transaction_id = uuid.uuid4().hex
+        operations = self._picks_ops(set(self.edits), transaction_id)
+        if operations:
+            self._transaction("picks_refresh", "", operations, dict(self.view), transaction_id)
+        return "picks_refreshed"
+
     def recover_pending(self) -> None:
         if self.faulted:
             raise RecoveryError("Reopen the app after a journal error.")
@@ -712,7 +745,8 @@ class ShootSession:
         if photo.key in self.edits:
             mark_id = self.edits[photo.key]
             mark = self.transactions[mark_id]
-            operations = self._inverse_ops(mark_id, transaction_id)
+            operations = self._inverse_ops(mark_id, transaction_id, include_picks=False)
+            operations.extend(self._picks_ops(set(self.edits) - {photo.key}, transaction_id))
             self._transaction("edit_unmark", photo.key, operations, view,
                               transaction_id, mark_id=mark_id)
             return False
@@ -721,6 +755,7 @@ class ShootSession:
                        "stage": f"{ARCHIVE}/islem/{transaction_id}/{path.name}.part",
                        "fingerprint": fingerprint(path)} for path in photo.files]
         operations.extend(self._xmp_ops(photo, self.root / EDIT, 3, transaction_id, copy=True))
+        operations.extend(self._picks_ops(set(self.edits) | {photo.key}, transaction_id))
         self._transaction("edit_mark", photo.key, operations, view, transaction_id)
         return True
 
@@ -737,10 +772,12 @@ class ShootSession:
                           transaction_id, undo_of=target_id)
         return True
 
-    def _inverse_ops(self, target_id: str, transaction_id: str) -> list[dict]:
+    def _inverse_ops(self, target_id: str, transaction_id: str, *, include_picks=True) -> list[dict]:
         target = self.transactions[target_id]
         operations = []
         for index, op in reversed(list(enumerate(target["ops"]))):
+            if not include_picks and op.get("role") == "picks":
+                continue
             source = self._path(op["dst"])
             if op["kind"] == "move":
                 destination, expected = self._path(op["src"]), op["fingerprint"]

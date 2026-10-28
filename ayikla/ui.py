@@ -231,7 +231,7 @@ class MainWindow(QMainWindow):
         intro.addWidget(label("PHOTO CULLING  /  TWO ROUNDS", "eyebrow"))
         intro.addWidget(label("Find your best frames.\nBuild your shortlist.", "hero"))
         description = label("Open your shoot. Choose what to keep, then what to edit\n"
-                            "in Lightroom. JPG and RAW stay together.", "muted")
+                            "in Lightroom. JPEG/TIFF scans work too.", "muted")
         description.setWordWrap(True)
         description.setStyleSheet("font-size: 14px;")
         intro.addWidget(description)
@@ -380,7 +380,7 @@ class MainWindow(QMainWindow):
         actions.setContentsMargins(8, 7, 8, 7)
         actions.setSpacing(6)
         self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
-        self.reject_button.setToolTip("Moves JPG + matching RAW to _red. Z to undo; no files are deleted.")
+        self.reject_button.setToolTip("Moves the photo + matching RAW to _red. Z to undo; no files are deleted.")
         actions.addWidget(self.reject_button)
         actions.addStretch()
         self.previous_button = button("↑  Previous", lambda: self.navigate(-1), "ghost")
@@ -390,10 +390,10 @@ class MainWindow(QMainWindow):
         actions.addWidget(self.next_button)
         actions.addStretch()
         self.keep_button = button("Keep  ·  → / Enter", lambda: self.decide(True), "keep")
-        self.keep_button.setToolTip("Moves JPG + matching RAW to 01_secilen for keeping.")
+        self.keep_button.setToolTip("Moves the photo + matching RAW to 01_secilen for keeping.")
         actions.addWidget(self.keep_button)
         self.mark_button = button("Pick for editing  ·  E", self.toggle_edit, "keep")
-        self.mark_button.setToolTip("Copies JPG + matching RAW to 02_edit for Lightroom.")
+        self.mark_button.setToolTip("Copies the photo + matching RAW to 02_edit for Lightroom.")
         actions.addWidget(self.mark_button)
         self.summary_button = button("Round summary", self.show_summary)
         actions.addWidget(self.summary_button)
@@ -464,7 +464,9 @@ class MainWindow(QMainWindow):
             self.refresh()
             return
         write_xmp = self.preferences.write_xmp
-        self._run(lambda: ShootSession(path, write_xmp=write_xmp), "Opening shoot and journal…", "Shoot ready.", opening=True)
+        self._run(lambda: ShootSession(path, write_xmp=write_xmp, export_picks=True,
+                                       palette_cache=self.color_profiles),
+                  "Opening shoot and journal…", "Shoot ready.", opening=True)
 
     def _set_xmp(self, enabled):
         if self.busy:
@@ -533,7 +535,7 @@ class MainWindow(QMainWindow):
         self.feedback.setText(self._success)
         self.notify(self._success)
         self.preview_photo = None
-        self.summary_requested = False
+        self.summary_requested = _result == "picks_refreshed"
         self.zoomed = False
         self.canvas.set_zoom(False)
         self.cache.discard_full_resolution()
@@ -585,7 +587,7 @@ class MainWindow(QMainWindow):
                 self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} kept  ·  {len(snapshot.rejected)} rejected")
                 self.remaining.setText(f"{len(snapshot.pending)} undecided")
             else:
-                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy JPG + matching RAW to 02_edit · "
+                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy photo + matching RAW to 02_edit · "
                                         "E again: remove edit pick · Decisions are saved automatically.")
                 position = self.index + 1 if self.photos else 0
                 self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} picked for editing")
@@ -666,6 +668,8 @@ class MainWindow(QMainWindow):
             self.canvas.update()
 
     def _update_decode_summary(self):
+        if not self.session:
+            return
         paths = [photo.jpeg.relative_to(self.session.root).as_posix()
                  for photo in self.session.all_photos() if photo.key in self.decode_failures]
         self.end_errors.setPlainText("Photos that could not be opened in this session "
@@ -912,6 +916,7 @@ class MainWindow(QMainWindow):
             self.summary_requested = True
             self.preview_photo = None
             self.refresh(rescan=False)
+            self._run(self.session.refresh_picks, "Refreshing edit-pick handoff…", "Edit-pick handoff saved")
 
     def return_to_photos(self):
         self.summary_requested = False

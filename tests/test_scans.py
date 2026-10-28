@@ -1,4 +1,5 @@
 import hashlib
+import struct
 from array import array
 
 import pytest
@@ -75,3 +76,18 @@ def test_tiff_orientation_and_capture_time(shoot):
     assert not error and image.width() <= 300 and image.height() <= 200
     assert image.height() > image.width()
     assert read_metadata(path).taken.isoformat() == "2026-10-29T13:14:15"
+
+
+def test_16bit_rgb_tiff_does_not_clip_channels(shoot):
+    # Minimal generated RGB TIFF: black, middle gray and white, 16 bits/channel.
+    tags = [(256, 4, 1, 3), (257, 4, 1, 1), (258, 3, 3, 134),
+            (259, 3, 1, 1), (262, 3, 1, 2), (273, 4, 1, 140),
+            (277, 3, 1, 3), (278, 4, 1, 1), (279, 4, 1, 18), (284, 3, 1, 1)]
+    header = b"II" + struct.pack("<HIH", 42, 8, len(tags))
+    directory = b"".join(struct.pack("<HHII", *tag) for tag in tags) + struct.pack("<I", 0)
+    path = shoot / "rgb16.tif"
+    path.write_bytes(header + directory + struct.pack("<HHH", 16, 16, 16)
+                     + struct.pack("<9H", 0, 0, 0, 32768, 32768, 32768, 65535, 65535, 65535))
+    image, error = read_image(path, QSize(100, 100))
+    assert not error
+    assert [image.pixelColor(i, 0).red() for i in range(3)] == [0, 128, 255]

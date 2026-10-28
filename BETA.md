@@ -1,6 +1,6 @@
-# Ayikla 1.2.0b1 · Photo club beta
+# Ayikla 1.3.0b1 · Photo club beta
 
-Cull JPG/JPEG + RAW shoots in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64; this build is verified on Windows 11. No Python installation required.
+Cull JPG/JPEG + RAW shoots or standalone JPEG/TIFF scans in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64. No Python installation required.
 
 ## Start
 
@@ -21,6 +21,9 @@ This package is unsigned. If Windows prevents it from opening, report the warnin
 | Switch to edit picks | M | Choose from your kept photos |
 | Pick / unpick for editing | E | Copies the pair to `02_edit`; unpicking archives the copies |
 | Check focus | F; drag | 100% zoom / pan; F again to fit |
+| Burst compare | B | 2-up / 4-up; left/right page through the burst |
+| Choose keeper | 1–4 in compare | Select a frame without changing files |
+| Confirm burst | Shift+Enter | Keep selected and reject all other burst frames; one Z undoes the group |
 | Color ideas (round 2) | C | Filter by tone or find similar palettes; click a result, then E to pick it |
 | Info / filmstrip / help | I / T / H | Toggle the panel |
 | Full screen | F11 | Toggle window / full screen |
@@ -28,6 +31,26 @@ This package is unsigned. If Windows prevents it from opening, report the warnin
 Decisions are saved automatically. **Folders** opens your kept, rejected and edit files. Import `02_edit` into Lightroom yourself. Folder names are unchanged from the Turkish release for compatibility.
 
 Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Retry** to rescan after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
+
+## New in 1.3
+
+- **Burst compare:** F zooms all panes and drag pans them together. Esc returns
+  to the keeper after confirmation. Remove existing edit picks before changing
+  the burst's decisions.
+- **XMP:** Settings → Write Lightroom XMP sidecars is on by default. Keep = one
+  star + Pick; edit copy = three stars; Reject = Rating -1 + Reject. Existing
+  XMP is archived first; Camera Raw adjustments and other metadata are preserved.
+  Undo restores the original sidecar bytes after restart. Lightroom import and
+  metadata refresh are manual; flag support requires Classic 13.2 or later.
+  JPEG/TIFF sidecar recognition varies by editor/version; test your workflow.
+- **Film scans:** standalone JPG/JPEG and TIF/TIFF work automatically. Missing
+  EXIF shows “—”. Color ideas accepts TIFF. 16-bit conversion affects only the
+  preview. Some TIFF decoders need full source memory before reducing the
+  preview; multipage files show their first page.
+- **Yazı handoff:** edit-pick changes and the round 2 summary refresh
+  `02_edit/ayikla_picks.json`. It contains metadata, palette swatches and empty
+  captions. See `docs/picks-schema.md`; keep authored captions in Yazı's own
+  data. JSON updates are archived and included in selection undo.
 
 ## Five-minute test
 
@@ -37,7 +60,7 @@ Keep two photos, reject one, then press Z. Close and reopen the shoot: do decisi
 
 Open a feedback or bug report at **https://github.com/Firextream/Ayikla/issues**. English and Turkish are welcome.
 
-- App version: **1.2.0b1**, also shown in H help.
+- App version: **1.3.0b1**, also shown in H help.
 - Windows version, display resolution and scaling (100%/125%/150%).
 - Camera, photo count and storage type (internal/external/SD card).
 - What did you do? What did you expect? What happened? Can you reproduce it?
@@ -51,4 +74,4 @@ JPG/JPEG pairs with RAF (Fuji), ARW/SRF/SR2 (Sony), ORF (Olympus), CR3/CR2/CRW, 
 
 ## Color ideas
 
-Press C in round 2. Select a tone and minimum frame coverage, or find similar palettes to the current photo. Up to 24 matches are shown. Click a frame to return to it; E is still your explicit edit-pick action. Analysis uses small JPEG previews locally, never changes files, and is cancelled when you close the panel. Color matches are approximate, influenced by camera style and lighting, and do not rate photographic quality.
+Press C in round 2. Select a tone and minimum frame coverage, or find similar palettes to the current photo. Up to 24 matches are shown. Click a frame to return to it; E is still your explicit edit-pick action. Analysis uses small JPEG/TIFF previews locally, never changes files, and is cancelled when you close the panel. Color matches are approximate, influenced by camera style, scan processing and lighting, and do not rate photographic quality.

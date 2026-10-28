@@ -19,12 +19,13 @@ class CaptureInfo:
     iso: str = "—"
     focal_length: str = "—"
     lens: str = "—"
+    camera: str = "—"
 
     def text(self) -> str:
         timestamp = self.taken.strftime("%d.%m.%Y  %H:%M:%S") if self.taken else "—"
         return (f"{self.filename}\n\nTaken     {timestamp}\nShutter     {self.shutter}\n"
                 f"Aperture     {self.aperture}\nISO     {self.iso}\n"
-                f"Focal length     {self.focal_length}\nLens     {self.lens}")
+                f"Focal length     {self.focal_length}\nLens     {self.lens}\nCamera     {self.camera}")
 
 
 def read_metadata(path: str | Path) -> CaptureInfo:
@@ -61,8 +62,11 @@ def _read_metadata(path: str | Path) -> CaptureInfo:
             if isinstance(iso, tuple):
                 iso = iso[0] if iso else "—"
             lens = str(values.get(42036, "—")).replace("\0", "").strip()[:200] or "—"
+            make = str(values.get(271, "")).replace("\0", "").strip()[:100]
+            model = str(values.get(272, "")).replace("\0", "").strip()[:100]
+            camera = (model if model.casefold().startswith(make.casefold()) else f"{make} {model}").strip() or "—"
             return CaptureInfo(path.name, taken, shutter, f"f/{aperture:g}" if aperture else "—",
-                               str(iso), f"{focal:g} mm" if focal else "—", lens)
+                               str(iso), f"{focal:g} mm" if focal else "—", lens, camera)
     except (OSError, ValueError, TypeError, SyntaxError, OverflowError):
         return CaptureInfo(path.name)
 

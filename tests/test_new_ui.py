@@ -23,7 +23,7 @@ def wait(app, predicate, seconds=10):
     deadline = time.monotonic() + seconds
     while not predicate() and time.monotonic() < deadline:
         app.processEvents()
-        QTest.qWait(5)
+        time.sleep(.005)  # Yield to Python workers while pumping Qt events.
     assert predicate(), "UI operation did not finish"
     app.processEvents()
 
@@ -243,3 +243,28 @@ def test_actionable_turkish_errors(error, fragment):
 def test_neutral_interface():
     assert "background: #1a1a1a" in STYLE
     assert "#c4f19b" not in STYLE
+
+
+def test_burst_compare_confirms_returns_to_keeper_and_group_undo(app, window, shoot):
+    for index in range(1, 7):
+        photo(shoot, index)
+    open_ready(app, window, shoot)
+    wait(app, lambda: len(window.metadata) == 6)
+    QTest.keyClick(window, Qt.Key.Key_B)
+    dialog = window.compare
+    assert dialog and dialog.page_size == 4
+    QTest.keyClick(dialog, Qt.Key.Key_Right)
+    QTest.keyClick(dialog, Qt.Key.Key_2)
+    assert dialog.selected == "img_0006"
+    assert not window.session.stack  # Selecting alone never acts.
+    QTest.keyClick(dialog, Qt.Key.Key_Return, Qt.KeyboardModifier.ShiftModifier)
+    wait(app, lambda: not window.busy)
+    assert not hasattr(window, "last_error")
+    assert len(window.session.snapshot().rejected) == 5
+    assert len(window.session.stack) == 1
+    QTest.keyClick(dialog, Qt.Key.Key_Escape)
+    assert window.compare is None and window.current.key == "img_0006"
+    QTest.keyClick(window, Qt.Key.Key_Z)
+    wait(app, lambda: not window.busy)
+    assert len(window.session.snapshot().pending) == 6
+    assert not list(shoot.glob("*.xmp"))

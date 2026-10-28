@@ -113,7 +113,7 @@ class ColorBrowser(QDialog):
 
     def _progress(self, count, total):
         if not self.closed:
-            self.status.setText(f"Analyzing kept JPEGs… {count} / {total}")
+            self.status.setText(f"Analyzing kept photos… {count} / {total}")
 
     def _ready(self, values, failures):
         if self.closed:
@@ -142,7 +142,7 @@ class ColorBrowser(QDialog):
         if not self.results and not reference_failed:
             message += " · Try a different tone or lower the percentage."
         if self.failures:
-            message += f" · {len(self.failures)} unreadable JPEGs skipped (details on hover)"
+            message += f" · {len(self.failures)} unreadable photos skipped (details on hover)"
         self.status.setText(message)
         self.status.setToolTip('\n'.join(f"{self.photos[key].jpeg.name}: {error}" for key, error in self.failures.items()))
         for index, (key, score) in enumerate(self.results):

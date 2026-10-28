@@ -84,9 +84,8 @@ def run_smoke(app, window, output: str) -> None:
     timer = QTimer(window)
     timer.setInterval(30)
 
-    def key(value):
-        QApplication.sendEvent(window, QKeyEvent(QKeyEvent.Type.KeyPress, value,
-                                                 Qt.KeyboardModifier.NoModifier))
+    def key(value, target=None, modifiers=Qt.KeyboardModifier.NoModifier):
+        QApplication.sendEvent(target or window, QKeyEvent(QKeyEvent.Type.KeyPress, value, modifiers))
 
     def screenshot(name):
         app.processEvents()
@@ -117,7 +116,7 @@ def run_smoke(app, window, output: str) -> None:
         try:
             if finished:
                 return
-            if time.monotonic() - started > 45:
+            if time.monotonic() - started > 90:
                 raise TimeoutError(f"Packaged UI stage {stage}: {window.feedback.text()}")
             if window.busy:
                 return
@@ -283,6 +282,86 @@ def run_smoke(app, window, output: str) -> None:
                 assert len(window.session.edits) == 1
                 assert any(photo.raw and photo.raw.suffix == ".ORF" for photo in window.session.snapshot().kept)
                 checks.append("Scaled color analysis, similar palettes, tone filter, corrupt skip and jump without edit decisions; RAF/ORF pairing")
+                modern = directory / "Burst and scans"
+                modern.mkdir()
+                for i in range(1, 7):
+                    exif = Image.Exif()
+                    exif[34665] = {36867: "2026:10:29 12:00:00", 37521: str(i * 100)}
+                    Image.new("RGB", (1800, 1200), (65 + i * 12, 110, 130)).save(modern / f"BURST_{i}.JPG", exif=exif)
+                    (modern / f"BURST_{i}.CR3").write_bytes(b"GENERATED BURST RAW")
+                original_xmp = (b'<x:xmpmeta xmlns:x="adobe:ns:meta/"><rdf:RDF '
+                                b'xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">'
+                                b'<rdf:Description xmlns:crs="http://ns.adobe.com/camera-raw-settings/1.0/" '
+                                b'crs:Exposure2012="+0.70"/></rdf:RDF></x:xmpmeta>')
+                (modern / "BURST_1.xmp").write_bytes(original_xmp)
+                window._smoke_xmp = original_xmp
+                scan = Image.new("I", (1600, 1000))
+                scan.putdata([int(x * 65535 / 1599) for _y in range(1000) for x in range(1600)])
+                scan.convert("I;16").save(modern / "FILM_SCAN.tiff", compression="tiff_lzw")
+                window.open_folder(modern)
+            elif stage == 28:
+                if len(window.metadata) != 7 or window.canvas.image.isNull():
+                    return
+                key(Qt.Key.Key_B)
+                assert window.compare and window.compare.page_size == 4
+            elif stage == 29:
+                dialog = window.compare
+                if any(p.image.isNull() for p in dialog.panes):
+                    return
+                assert dialog.grab().save(str(directory / "burst-compare.png"))
+                key(Qt.Key.Key_F, dialog)
+            elif stage == 30:
+                dialog = window.compare
+                if any(p.image.width() != 1800 for p in dialog.panes):
+                    return
+                dialog.pan_all(QPointF(60, 40))
+                assert all(p.zoomed for p in dialog.panes)
+                key(Qt.Key.Key_Right, dialog)
+                key(Qt.Key.Key_2, dialog)
+                assert dialog.selected == "burst_6"
+                key(Qt.Key.Key_Return, dialog, Qt.KeyboardModifier.ShiftModifier)
+            elif stage == 31:
+                assert window.compare.saved
+                assert len(window.session.snapshot().rejected) == 5
+                sidecar = window.session.root / REJECTED / "BURST_1.xmp"
+                assert b'crs:Exposure2012="+0.70"' in sidecar.read_bytes()
+                assert b'xmp:Rating="-1"' in sidecar.read_bytes()
+                key(Qt.Key.Key_Escape, window.compare)
+                assert window.current.key == "burst_6"
+                folder = window.session.root
+                window.session.close()
+                window.session = None
+                window.open_folder(folder)
+            elif stage == 32:
+                assert window.current.key == "burst_6"
+                key(Qt.Key.Key_Z)
+            elif stage == 33:
+                assert len(window.session.snapshot().pending) == 7
+                assert (window.session.root / "BURST_1.xmp").read_bytes() == window._smoke_xmp
+                checks.append("1.3 burst 4-up, paging, synced focus, explicit group decision, XMP preservation and group undo after reopen")
+                window.jump_to("film_scan")
+            elif stage == 34:
+                if window.canvas.image.isNull():
+                    return
+                assert window.canvas.image.width() <= 1600
+                window.toggle_info()
+                screenshot("film-scan")
+                window.decide(True)
+            elif stage == 35:
+                window.jump_to("film_scan")
+                window.toggle_edit()
+            elif stage == 36:
+                path = window.session.root / EDIT / "ayikla_picks.json"
+                payload = json.loads(path.read_text("utf-8"))
+                assert payload["schema_version"] == 1
+                pick, = payload["picks"]
+                assert pick["filename"] == "FILM_SCAN.tiff" and pick["palette"] and pick["caption"] == ""
+                assert b'xmp:Rating="3"' in (path.parent / "FILM_SCAN.xmp").read_bytes()
+                window.show_summary()
+            elif stage == 37:
+                assert window.viewer.currentIndex() == 1
+                screenshot("picks-summary")
+                checks.append("1.3 Pillow 16-bit TIFF display, XMP edit rating, palette handoff schema and round 2 refresh")
                 finish()
                 return
             stage += 1

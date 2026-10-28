@@ -25,7 +25,7 @@ environment.pop("PYTHONHOME", None)
 environment.pop("PYTHONPATH", None)
 process = subprocess.run(
     [str(executable), "--smoke-test", str(output)],
-    cwd=output, env=environment, capture_output=True, timeout=60,
+    cwd=output, env=environment, capture_output=True, timeout=120,
     creationflags=subprocess.CREATE_NO_WINDOW,
 )
 results = list(output.glob("smoke-*/result.json"))
@@ -55,7 +55,9 @@ for source, target in (("colors.png", "colors.png"), ("color-filter.png", "color
                        ("filmstrip.png", "filmstrip.png"), ("end.png", "end.png"),
                        ("gallery.png", "arayuz.png"), ("welcome.png", "baslangic.png"),
                        ("folders.png", "folders.png"), ("help.png", "help.png"),
-                       ("corrupt.png", "corrupt.png"), ("corrupt-summary.png", "corrupt-summary.png")):
+                       ("corrupt.png", "corrupt.png"), ("corrupt-summary.png", "corrupt-summary.png"),
+                       ("burst-compare.png", "burst-compare.png"), ("film-scan.png", "film-scan.png"),
+                       ("picks-summary.png", "picks-summary.png")):
     image = results[0].parent / source
     if image.exists() and backend == "offscreen":
         shutil.copyfile(image, docs / target)
