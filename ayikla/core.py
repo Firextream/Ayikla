@@ -337,7 +337,7 @@ class ShootSession:
         if kind == "begin":
             if self.pending_id or record["id"] in self.transactions:
                 raise RecoveryError("Journal contains conflicting operations.")
-            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo", "picks_refresh", "import"}:
+            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo", "picks_refresh", "import", "contact_sheet"}:
                 raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
                 if operation["kind"] not in {"move", "copy", "write", "imported"}:
@@ -690,6 +690,28 @@ class ShootSession:
         operations = [{"kind": "imported", "dst": item["dst"], "fingerprint": item["fingerprint"],
                        "sha256": item["sha256"]} for item in files]
         self._transaction("import", "", operations, dict(self.view), import_id=import_id)
+
+    def export_contact_sheet(self, include_pdf=False, *, today=None) -> dict:
+        from datetime import date
+        from .contact_sheet import encode, render
+        self._ensure_ready()
+        photos = [Photo(p.key, self._path(f"{EDIT}/{p.jpeg.name}"), None, "edit")
+                  for p in self.all_photos() if p.key in self.edits]
+        date_text = (today or date.today()).isoformat()
+        jpeg, pdf = encode(render(photos, date_text), include_pdf)
+        stem, suffix = f"contact_sheet_{date_text}", 1
+        while True:
+            basename = stem if suffix == 1 else f"{stem}_{suffix}"
+            if not any(self._existing(self._path(f"{EDIT}/{basename}.{ext}")) for ext in ("jpg", "pdf")):
+                break
+            suffix += 1
+        identity = uuid.uuid4().hex
+        outputs = [(self._path(f"{EDIT}/{basename}.jpg"), jpeg)]
+        if pdf is not None:
+            outputs.append((self._path(f"{EDIT}/{basename}.pdf"), pdf))
+        operations = [self._write_op(path, content, identity) for path, content in outputs]
+        self._transaction("contact_sheet", "", operations, dict(self.view), identity)
+        return {"contact_sheet": [self._relative(path) for path, _content in outputs]}
 
     def _xmp_ops(self, photo: Photo, target: Path, rating: int, transaction_id: str, *, copy=False) -> list[dict]:
         if not self.write_xmp:

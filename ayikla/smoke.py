@@ -362,6 +362,83 @@ def run_smoke(app, window, output: str) -> None:
                 assert window.viewer.currentIndex() == 1
                 screenshot("picks-summary")
                 checks.append("1.3 Pillow 16-bit TIFF display, XMP edit rating, palette handoff schema and round 2 refresh")
+                window.contact_pdf.setChecked(True)
+                window.export_contact_sheet()
+            elif stage == 38:
+                outputs = list((window.session.root / EDIT).glob("contact_sheet_*.jpg"))
+                assert len(outputs) == 1
+                assert outputs[0].with_suffix(".pdf").read_bytes().startswith(b"%PDF")
+                assert QImage(str(outputs[0])).save(str(directory / "contact-sheet.png"))
+                screenshot("contact-sheet-summary")
+                window.undo()
+            elif stage == 39:
+                assert not list((window.session.root / EDIT).glob("contact_sheet_*"))
+                window.jump_to("burst_3")
+                folder = window.session.root
+                window.session.close()
+                window.session = None
+                window.open_folder(folder)
+            elif stage == 40:
+                if window.canvas.image.isNull():
+                    return
+                assert window.current.key == "burst_3" and window.mode == "cull"
+                assert window.toast.text() == "Resumed at BURST_3 · round 1"
+                assert window.start_first_button.isVisible()
+                screenshot("resume")
+                window.start_from_first()
+                assert window.current.key == "burst_1"
+                card = directory / "Generated card" / "DCIM" / "100TEST"
+                card.mkdir(parents=True)
+                for i in range(12):
+                    Image.new("RGB", (320, 200), (80 + i * 8, 120, 150)).save(card / f"CARD_{i:02d}.JPG")
+                    (card / f"CARD_{i:02d}.CR3").write_bytes(b"GENERATED CARD RAW" * 100)
+                root = directory / "Imported shoots"
+                root.mkdir()
+                window._smoke_card, window._smoke_destination = card.parent.parent, root
+                window.choose_import()
+                dialog = window.import_dialog
+                dialog.source.setText(str(window._smoke_card))
+                dialog.destination.setText(str(root))
+                dialog.name.setText("club")
+                dialog.start()
+                assert dialog.grab().save(str(directory / "import-card.png"))
+            elif stage == 41:
+                if window.import_dialog.running:
+                    return
+                assert window.session.root.name.endswith("_club") and window.session.snapshot().total == 12
+                assert window.preferences.import_destination == str(window._smoke_destination)
+                assert len(list(window._smoke_card.rglob("*.CR3"))) == 12
+                window.decide(True)
+            elif 42 <= stage <= 50:
+                window.decide(True)
+            elif stage == 51:
+                assert window.pace.decisions == 10
+                assert "10 / 12 decided" in window.progress_line.text() and "min left" in window.progress_line.text()
+                screenshot("progress-line")
+                window.choose_import()
+                dialog = window.import_dialog
+                dialog.source.setText(str(window._smoke_card))
+                dialog.destination.setText(str(window._smoke_destination))
+                dialog.name.setText("club")
+                dialog.start()
+            elif stage == 52:
+                if window.import_dialog.running:
+                    return
+                assert window.session.snapshot().total == 12 and len(window.session.stack) == 11
+                window.choose_import()
+                dialog = window.import_dialog
+                dialog.source.setText(str(window._smoke_card))
+                dialog.destination.setText(str(window._smoke_destination))
+                dialog.name.setText("cancelled")
+                dialog.start()
+                dialog.reject()
+            elif stage == 53:
+                if window.import_dialog.running:
+                    return
+                assert not list(window._smoke_destination.rglob("*.part"))
+                checks.append("1.4 portable resume toast, start from first and median ETA after ten decisions")
+                checks.append("1.4 recursive card import with SHA-256, remembered root, duplicate skip after culling and cooperative cancellation")
+                checks.append("1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo")
                 finish()
                 return
             stage += 1

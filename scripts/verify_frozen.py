@@ -57,7 +57,9 @@ for source, target in (("colors.png", "colors.png"), ("color-filter.png", "color
                        ("folders.png", "folders.png"), ("help.png", "help.png"),
                        ("corrupt.png", "corrupt.png"), ("corrupt-summary.png", "corrupt-summary.png"),
                        ("burst-compare.png", "burst-compare.png"), ("film-scan.png", "film-scan.png"),
-                       ("picks-summary.png", "picks-summary.png")):
+                       ("picks-summary.png", "picks-summary.png"), ("resume.png", "resume.png"),
+                       ("progress-line.png", "progress-line.png"), ("import-card.png", "import-card.png"),
+                       ("contact-sheet.png", "contact-sheet.png"), ("contact-sheet-summary.png", "contact-sheet-summary.png")):
     image = results[0].parent / source
     if image.exists() and backend == "offscreen":
         shutil.copyfile(image, docs / target)

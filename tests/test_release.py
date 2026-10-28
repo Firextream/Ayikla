@@ -52,7 +52,7 @@ def test_release_rejects_paths(tmp_path, bundle, filename):
     assert not list((tmp_path / "dist").glob("*.zip"))
 
 
-@pytest.mark.parametrize("name", ["ayikla_settings.jsonl", "PHOTO.JPG", "PHOTO.RAF", "PHOTO.ARW", "PHOTO.ORF", "SCAN.TIF", "SCAN.TIFF", "PHOTO.xmp"])
+@pytest.mark.parametrize("name", ["ayikla_settings.jsonl", "ayikla_import.jsonl", "contact_sheet_2026.pdf", "PHOTO.JPG", "PHOTO.RAF", "PHOTO.ARW", "PHOTO.ORF", "SCAN.TIF", "SCAN.TIFF", "PHOTO.xmp"])
 def test_release_refuses_unexpected_private_runtime_data(tmp_path, bundle, name):
     (bundle / "_internal" / name).write_bytes(b"private")
     with pytest.raises(ValueError, match="private"):

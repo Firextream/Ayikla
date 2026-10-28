@@ -1,0 +1,93 @@
+from datetime import date
+import os
+from pathlib import Path
+
+import pytest
+from PIL import Image
+from PySide6.QtCore import QSize
+from PySide6.QtGui import QFontDatabase, QFontMetrics, QFont, QImage
+from PySide6.QtPdf import QPdfDocument
+from PySide6.QtWidgets import QApplication
+
+from ayikla.contact_sheet import encode, layout, render
+from ayikla.core import ShootSession, EDIT, ARCHIVE, AyiklaError
+
+
+@pytest.fixture(scope="module", autouse=True)
+def app():
+    application = QApplication.instance() or QApplication([])
+    fonts = Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+    for name in ("segoeui.ttf", "segoeuib.ttf"):
+        QFontDatabase.addApplicationFont(str(fonts / name))
+    assert QFontMetrics(QFont("Segoe UI")).inFont("A")
+    return application
+
+
+@pytest.mark.parametrize("count", [1, 2, 3, 5, 13, 50])
+def test_layout_keeps_every_caption_and_image_inside_nonoverlapping_cards(count):
+    grid = layout(count)
+    assert len(grid.cards) == count
+    for i, card in enumerate(grid.cards):
+        assert card.top() >= 140 and card.bottom() < grid.height - 24
+        assert card.left() >= 48 and card.right() < grid.width - 24
+        assert card.height() >= 272 + 4 * 27
+        assert all(not card.intersects(other) for other in grid.cards[i + 1:])
+
+
+def select_photos(shoot, count=5):
+    for i in range(count):
+        exif = Image.Exif()
+        exif[34665] = {34855: 200, 36867: "2026:10:29 12:34:56"}
+        Image.new("RGB", (300, 200), (200 if i % 2 else 20, 80, 150)).save(shoot / f"IMG_{i}.JPG", exif=exif)
+    session = ShootSession(shoot)
+    for photo in session.snapshot().pending:
+        session.decide(photo, True)
+    for photo in session.snapshot().kept:
+        session.toggle_edit(photo)
+    return session
+
+
+def test_contact_sheet_jpeg_pdf_render_and_undo_after_restart(shoot, tmp_path):
+    with select_photos(shoot) as session:
+        original = {p: p.read_bytes() for p in shoot.rglob("*.JPG")}
+        result = session.export_contact_sheet(True, today=date(2026, 10, 29))
+        jpg, pdf = [shoot / path for path in result["contact_sheet"]]
+        image = QImage(str(jpg))
+        assert not image.isNull() and image.size() == QSize(layout(5).width, layout(5).height)
+        document = QPdfDocument()
+        assert document.load(str(pdf)) == QPdfDocument.Error.None_
+        assert document.pageCount() == 1
+        rendered = document.render(0, image.size())
+        assert not rendered.isNull()
+        # The optional PDF carries the same raster grid and captions.
+        assert abs(rendered.width() / rendered.height() - image.width() / image.height()) < .001
+        rendered.save(str(tmp_path / "pdf-render.png"))
+        document.close()
+        del document  # Release the native PDF reader's Windows file handle.
+        assert all(path.read_bytes() == content for path, content in original.items())
+        second = session.export_contact_sheet(today=date(2026, 10, 29))
+        assert second["contact_sheet"] == [f"{EDIT}/contact_sheet_2026-10-29_2.jpg"]
+        assert jpg.exists() and pdf.exists()
+    with ShootSession(shoot) as session:
+        assert session.undo()
+        assert not (shoot / second["contact_sheet"][0]).exists()
+        assert session.undo()
+        assert not jpg.exists() and not pdf.exists()
+        assert len(list((shoot / ARCHIVE).rglob("contact_sheet_2026-10-29.pdf"))) == 1
+
+
+def test_empty_shortlist_and_excessive_sheet_have_clear_errors(shoot):
+    with ShootSession(shoot) as session:
+        with pytest.raises(AyiklaError, match="at least one"):
+            session.export_contact_sheet()
+    with pytest.raises(AyiklaError, match="too large"):
+        layout(10000)
+
+
+def test_corrupt_preview_still_exports_named_placeholder(shoot):
+    (shoot / "bad.JPG").write_bytes(b"generated unreadable image")
+    with ShootSession(shoot) as session:
+        session.decide(session.snapshot().pending[0], True)
+        session.toggle_edit(session.snapshot().kept[0])
+        outputs = session.export_contact_sheet()
+        assert not QImage(str(shoot / outputs["contact_sheet"][0])).isNull()

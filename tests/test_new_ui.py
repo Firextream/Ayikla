@@ -268,3 +268,27 @@ def test_burst_compare_confirms_returns_to_keeper_and_group_undo(app, window, sh
     wait(app, lambda: not window.busy)
     assert len(window.session.snapshot().pending) == 6
     assert not list(shoot.glob("*.xmp"))
+
+
+def test_summary_exports_contact_sheet_and_pdf_with_keyboard(app, window, shoot):
+    photo(shoot, 1)
+    open_ready(app, window, shoot)
+    window.decide(True)
+    wait(app, lambda: not window.busy)
+    window.set_mode("edit")
+    window.toggle_edit()
+    wait(app, lambda: not window.busy)
+    window.show_summary()
+    wait(app, lambda: not window.busy)
+    assert window.contact_sheet_button.isVisible() and window.contact_sheet_button.isEnabled()
+    window.contact_pdf.setChecked(True)
+    QTest.keyClick(window, Qt.Key.Key_E, Qt.KeyboardModifier.ControlModifier | Qt.KeyboardModifier.ShiftModifier)
+    wait(app, lambda: not window.busy)
+    assert not hasattr(window, "last_error")
+    outputs = list((shoot / EDIT).glob("contact_sheet_*"))
+    assert {path.suffix for path in outputs} == {".jpg", ".pdf"}
+    assert window.viewer.currentIndex() == 1 and window.summary_requested
+    window.undo()
+    wait(app, lambda: not window.busy)
+    assert all(not path.exists() for path in outputs)
+    assert len(window.session.edits) == 1

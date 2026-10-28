@@ -1,7 +1,7 @@
 {
   "ok": true,
   "error": null,
-  "version": "1.3.0b1",
+  "version": "1.4.0b1",
   "checks": [
     "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
     "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
@@ -14,14 +14,17 @@
     "Delete rejects without deletion; keep versus edit round labels are explicit",
     "Scaled color analysis, similar palettes, tone filter, corrupt skip and jump without edit decisions; RAF/ORF pairing",
     "1.3 burst 4-up, paging, synced focus, explicit group decision, XMP preservation and group undo after reopen",
-    "1.3 Pillow 16-bit TIFF display, XMP edit rating, palette handoff schema and round 2 refresh"
+    "1.3 Pillow 16-bit TIFF display, XMP edit rating, palette handoff schema and round 2 refresh",
+    "1.4 portable resume toast, start from first and median ETA after ten decisions",
+    "1.4 recursive card import with SHA-256, remembered root, duplicate skip after culling and cooperative cancellation",
+    "1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo"
   ],
-  "elapsed_seconds": 4.58,
-  "directory": ".tmp/frozen-verification/210c095a90e2/smoke-e4db7fea8aa4",
+  "elapsed_seconds": 7.17,
+  "directory": ".tmp/frozen-verification/ba1bb268158f/smoke-913bb7124fa2",
   "executable": "dist/Ayikla/Ayikla.exe",
-  "bytes": 2634443,
-  "package_bytes": 65827311,
-  "sha256": "99767cb504812a35db7816ec275d2c894475187a8a26f74fbf707cdd23025ad1",
+  "bytes": 2665853,
+  "package_bytes": 65858721,
+  "sha256": "9ef00bf20334ad08694631f488447e5c9f0a930cd61ca94a2c5c562f1bccc78d",
   "exit_code": 0,
   "source_on_path": false,
   "qt_backend": "offscreen",

@@ -4,11 +4,11 @@
 
 A simple, keyboard-first Windows photo culling app for RAW+JPEG shoots. First choose what to keep, then pick what to edit in Lightroom.
 
-**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.3.0b1 Beta**
+**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.4.0b1 Beta**
 
 ### [Latest published download · 1.2.0b1 · Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
 
-1.3.0b1 is a local beta candidate; its release has not been tagged or published.
+1.4.0b1 is a local beta candidate; its release has not been tagged or published.
 Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
 
 [Release notes](https://github.com/Firextream/Ayikla/releases/tag/v1.2.0b1) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
@@ -58,6 +58,8 @@ Folder names stay the same as earlier Turkish builds so existing shoots and jour
 | T | Toggle filmstrip; click a thumbnail to jump |
 | H / ? | Keyboard help and app version |
 | Ctrl+O | Open another shoot folder |
+| Ctrl+I | Import verified copies from a card or folder |
+| Ctrl+Shift+E | Round 2 summary: export a contact sheet; check Also save PDF for a PDF copy |
 | F11 | Toggle full screen |
 | Esc | Close help, then leave zoom, then leave full screen |
 
@@ -65,6 +67,49 @@ In burst compare, F changes zoom in every pane and dragging pans them together.
 Esc returns to the kept frame after confirmation. Existing edit picks must be
 unmarked before changing a burst decision. Burst detection uses consecutive
 capture times at most one second apart; suggestions never decide for you.
+
+## Resume and progress
+
+Each shoot's `ayikla_log.jsonl` remembers the round, current filename and capture
+time. Reopen the folder or a recent folder to resume, with a small notification.
+**Start from first** returns to the first photo of the current round without
+changing any decisions. The bookmark travels with the shoot folder. If the
+photo was moved or renamed, Ayikla chooses the nearest undecided capture time;
+with no timestamps it uses natural filename order. In round 2 the fallback
+prefers kept photos not yet picked, then undecided round 1 photos if needed.
+
+The footer shows round 1 decided/total counts. After ten decisions in the current
+session it adds an approximate remaining time based on the median seconds per
+frame (burst decisions count their newly decided frames). It resets when opening
+another shoot; previous sessions are not included. Round 2 shows edit-pick counts.
+
+## Import from a card
+
+Press **Ctrl+I**, or **Settings → Import from card**. Choose the card/source,
+an existing destination root and a shoot name. The last destination root is
+remembered. Ayikla scans nested source folders and copies supported JPEG, TIFF
+and RAW files into `<root>/YYYY-MM-DD_<name>`; card folders are flattened.
+Every new copy is checked by size and SHA-256 before publication. Source files
+are never changed. Identical copies are skipped, including photos already moved
+to kept/rejected folders; different contents or ambiguous partners produce an
+error instead of overwriting. A later RAW partner follows its existing preview.
+
+Cancel keeps fully verified files and removes only incomplete private `.part`
+staging data. One Z archives the new files from that import batch; skipped files
+are untouched. Undo works after restarting. Keep `ayikla_import.jsonl` with the
+shoot alongside its main journal and archive. An import cannot target a folder
+inside the source/card. Folder links and hidden/helper files are not imported.
+
+## Share a contact sheet
+
+In the **round 2 summary**, choose **Export contact sheet**, or Ctrl+Shift+E.
+Check **Also save PDF** for an optional PDF of the same grid. The sheet contains
+only edit picks, with filenames and available exposure, lens and capture-time
+metadata below each preview. It is saved as `02_edit/contact_sheet_<date>.jpg`
+(and `.pdf`). Existing exports receive `_2`, `_3`, etc.; nothing is overwritten.
+One Z archives both outputs together. Portrait and landscape images fit without
+cropping; unavailable previews are labeled. Very large sheets are limited to
+80 megapixels / 65,000 pixels in height; use a smaller shortlist when prompted.
 
 ## Lightroom sidecars
 

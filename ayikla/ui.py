@@ -7,7 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import QObject, QPoint, QRunnable, QRect, QSize, Qt, QThreadPool, QTimer, QUrl, Signal
 from PySide6.QtGui import QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
-    QFileDialog, QFrame, QHBoxLayout, QLabel, QLayout, QMainWindow, QMessageBox,
+    QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLayout, QMainWindow, QMessageBox,
     QMenu, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
 )
 
@@ -334,6 +334,10 @@ class MainWindow(QMainWindow):
         end_layout.addWidget(self.round2_button)
         self.explorer_button = button("Open 02_edit in Explorer", self.open_edit_folder)
         end_layout.addWidget(self.explorer_button)
+        self.contact_sheet_button = button("Export contact sheet · Ctrl+Shift+E", self.export_contact_sheet)
+        end_layout.addWidget(self.contact_sheet_button)
+        self.contact_pdf = QCheckBox("Also save PDF")
+        end_layout.addWidget(self.contact_pdf)
         folder_links = QHBoxLayout()
         self.kept_folder_button = button("Kept photos  ↗", lambda: self.open_shoot_folder(KEPT), "ghost")
         self.rejected_folder_button = button("Rejected photos  ↗", lambda: self.open_shoot_folder(REJECTED), "ghost")
@@ -474,7 +478,8 @@ class MainWindow(QMainWindow):
         if self.busy:
             return
         if self.session and Path(path).resolve() == self.session.root:
-            self.refresh()
+            self.refresh(self.current.key if self.current else self.session.view["key"])
+            self._load_metadata()
             return
         write_xmp = self.preferences.write_xmp
         self._run(lambda: ShootSession(path, write_xmp=write_xmp, export_picks=True,
@@ -595,7 +600,7 @@ class MainWindow(QMainWindow):
         self.feedback.setText(self._success)
         self.notify(self._success)
         self.preview_photo = None
-        self.summary_requested = _result == "picks_refreshed"
+        self.summary_requested = _result == "picks_refreshed" or (isinstance(_result, dict) and "contact_sheet" in _result)
         self.zoomed = False
         self.canvas.set_zoom(False)
         self.cache.discard_full_resolution()
@@ -768,6 +773,10 @@ class MainWindow(QMainWindow):
         self.mark_button.setVisible(self.mode == "edit")
         self.summary_button.setVisible(self.mode == "edit")
         self.summary_button.setEnabled(enabled)
+        self.contact_sheet_button.setVisible(self.mode == "edit")
+        self.contact_pdf.setVisible(self.mode == "edit")
+        self.contact_sheet_button.setEnabled(enabled and bool(self.session.edits))
+        self.contact_pdf.setEnabled(enabled)
         summary_visible = self.viewer.currentIndex() == 1
         self.controls.setVisible(not summary_visible)
         self.photo_info.setVisible(not summary_visible)
@@ -983,6 +992,13 @@ class MainWindow(QMainWindow):
             self.refresh(rescan=False)
             self._run(self.session.refresh_picks, "Refreshing edit-pick handoff…", "Edit-pick handoff saved")
 
+    def export_contact_sheet(self):
+        if not self.session or self.busy or self.mode != "edit" or not self.summary_requested or not self.session.edits:
+            return
+        include_pdf = self.contact_pdf.isChecked()
+        self._run(lambda: self.session.export_contact_sheet(include_pdf),
+                  "Building contact sheet…", "Contact sheet saved in 02_edit · Z to undo")
+
     def return_to_photos(self):
         self.summary_requested = False
         self.refresh(rescan=False)
@@ -1049,6 +1065,9 @@ class MainWindow(QMainWindow):
             self.choose_folder()
         elif key == Qt.Key.Key_I and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.choose_import()
+        elif (key == Qt.Key.Key_E and event.modifiers() & Qt.KeyboardModifier.ControlModifier
+              and event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
+            self.export_contact_sheet()
         elif self.busy or event.isAutoRepeat() or not self.session or self.session.pending_id or self.session.faulted:
             return
         elif key == Qt.Key.Key_M:
@@ -1077,6 +1096,11 @@ class MainWindow(QMainWindow):
             super().keyPressEvent(event)
 
     def closeEvent(self, event):
+        if self.import_dialog and self.import_dialog.running:
+            self.import_dialog.reject()
+            self.feedback.setText("Cancelling import. Close the window once verified files are saved.")
+            event.ignore()
+            return
         if self.busy:
             self.feedback.setText("A file operation is running. Close the window once it finishes.")
             event.ignore()

@@ -36,10 +36,11 @@ def package(root: Path, filename: str | None = None) -> Path:
     inputs = [(bundle / "Ayikla.exe", "Ayikla/Ayikla.exe"),
               (bundle / "MasaustuKisayolu.ps1", "Ayikla/MasaustuKisayolu.ps1"),
               (root / "BETA.md", "Ayikla/GETTING_STARTED.md")]
-    private_names = {"ayikla_settings.jsonl", "ayikla_log.jsonl", ".ayikla.lock"}
+    private_names = {"ayikla_settings.jsonl", "ayikla_log.jsonl", "ayikla_import.jsonl", ".ayikla.lock"}
     for path in sorted(runtime.rglob("*")):
         checked(path)
-        if path.name.casefold() in private_names or path.suffix.casefold() in RAW_EXTENSIONS | PREVIEW_EXTENSIONS | {".xmp"}:
+        if (path.name.casefold() in private_names or path.name.casefold().startswith("contact_sheet_")
+                or path.suffix.casefold() in RAW_EXTENSIONS | PREVIEW_EXTENSIONS | {".xmp"}):
             raise ValueError("Unexpected private data in the built runtime")
         if path.is_file():
             inputs.append((path, "Ayikla/" + path.relative_to(bundle).as_posix()))

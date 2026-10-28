@@ -1,4 +1,4 @@
-# Ayikla 1.3.0b1 · Photo club beta
+# Ayikla 1.4.0b1 · Photo club beta
 
 Cull JPG/JPEG + RAW shoots or standalone JPEG/TIFF scans in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64. No Python installation required.
 
@@ -27,12 +27,35 @@ This package is unsigned. If Windows prevents it from opening, report the warnin
 | Color ideas (round 2) | C | Filter by tone or find similar palettes; click a result, then E to pick it |
 | Info / filmstrip / help | I / T / H | Toggle the panel |
 | Full screen | F11 | Toggle window / full screen |
+| Import from card | Ctrl+I | Verified copies; remembers destination root |
+| Contact sheet | Ctrl+Shift+E in round 2 summary | Export JPEG; optional PDF checkbox |
 
 Decisions are saved automatically. **Folders** opens your kept, rejected and edit files. Import `02_edit` into Lightroom yourself. Folder names are unchanged from the Turkish release for compatibility.
 
 Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Retry** to rescan after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
 
-## New in 1.3
+## New in 1.4
+
+- **Resume:** each shoot journal remembers the round, filename and capture time.
+  Reopening resumes with a toast and **Start from first** action. If the saved
+  photo moved or was renamed, fallback uses the nearest undecided capture time
+  (natural filename order if EXIF is missing). Decisions remain unchanged.
+- **Progress:** round 1 shows decided / total and an approximate remaining time
+  after ten decisions this session, using the median seconds per frame. Round 2
+  shows edit picks. Opening another shoot resets the pace estimate.
+- **Import:** Ctrl+I copies supported JPEG/TIFF/RAW from nested card folders into
+  `<root>/YYYY-MM-DD_<name>`. Destination root is remembered. New files are verified
+  by size and SHA-256; identical copies are skipped and collisions never overwrite.
+  Cancel removes partial staging data and keeps verified files. Z archives the
+  batch's new copies, including after restarting. The source/card stays untouched.
+  Keep `ayikla_import.jsonl`; it contains local source paths, so do not publish it.
+- **Contact sheet:** round 2 summary → Export contact sheet, or Ctrl+Shift+E.
+  Check Also save PDF if needed. Edit picks appear in a JPEG grid with filename
+  and key EXIF. Exports go into `02_edit/contact_sheet_<date>.jpg` / `.pdf`, with
+  numbered names for repeat exports. One Z archives both outputs. Extremely
+  large sheets require a smaller selection (80 MP / 65,000-pixel height limit).
+
+## Also included from 1.3
 
 - **Burst compare:** F zooms all panes and drag pans them together. Esc returns
   to the keeper after confirmation. Remove existing edit picks before changing
@@ -60,7 +83,7 @@ Keep two photos, reject one, then press Z. Close and reopen the shoot: do decisi
 
 Open a feedback or bug report at **https://github.com/Firextream/Ayikla/issues**. English and Turkish are welcome.
 
-- App version: **1.3.0b1**, also shown in H help.
+- App version: **1.4.0b1**, also shown in H help.
 - Windows version, display resolution and scaling (100%/125%/150%).
 - Camera, photo count and storage type (internal/external/SD card).
 - What did you do? What did you expect? What happened? Can you reproduce it?
