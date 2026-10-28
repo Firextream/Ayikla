@@ -18,6 +18,7 @@ from .color_browser import ColorBrowser
 from .metadata import burst_groups, burst_hints, read_metadata
 from .compare import BurstCompare
 from .preferences import Preferences
+from .progress import DecisionPace
 from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
 
 STYLE = """
@@ -130,6 +131,8 @@ class MainWindow(QMainWindow):
         self.index = 0
         self.mode = "cull"
         self.busy = False
+        self.pace = DecisionPace()
+        self._decision_count = 0
         self.preferences = Preferences()
         self.zoomed = False
         self.preview_photo = None
@@ -407,6 +410,8 @@ class MainWindow(QMainWindow):
         self.start_first_button = button("Start from first", self.start_from_first, "ghost")
         self.start_first_button.hide()
         footer.addWidget(self.start_first_button)
+        self.progress_line = label("", "muted")
+        footer.addWidget(self.progress_line)
         self.feedback = label("Choose a shoot folder to start.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
@@ -483,10 +488,11 @@ class MainWindow(QMainWindow):
             self.xmp_action.setChecked(self.preferences.write_xmp)
             self._show_error(error)
 
-    def _run(self, operation, message: str, success: str, opening=False):
+    def _run(self, operation, message: str, success: str, opening=False, decision_count=0):
         if self.busy:
             return
         self.busy = True
+        self._decision_count = decision_count
         self._success = success
         self.feedback.setText(message)
         self._update_enabled()
@@ -503,6 +509,7 @@ class MainWindow(QMainWindow):
         if self.session:
             self.session.close()
         self.session = result
+        self.pace = DecisionPace()
         self.decode_failures.clear()
         self.preview_photo = None
         self.summary_requested = False
@@ -542,6 +549,9 @@ class MainWindow(QMainWindow):
     def _operation_finished(self, _result, error):
         self.busy = False
         self._task = None
+        if not error and self._decision_count:
+            self.pace.record(self._decision_count)
+        self._decision_count = 0
         if self.compare:
             self.compare.setEnabled(True)
             if not error:
@@ -592,6 +602,7 @@ class MainWindow(QMainWindow):
             return
         try:
             snapshot = self.session.rescan() if rescan else self.session.snapshot()
+            self.progress_line.setText(self.pace.line(snapshot, self.mode, len(self.session.edits)))
             self.ignored_notice.setText(self.session.ignored_notice)
             self.ignored_notice.setVisible(bool(self.session.ignored_notice))
             self.photos = snapshot.pending if self.mode == "cull" else snapshot.kept
@@ -757,6 +768,7 @@ class MainWindow(QMainWindow):
         if self.busy or not self.session or self.session.pending_id or self.session.faulted:
             return
         self.mode = mode
+        self.pace.restart_interval()
         self.preview_photo = None
         self.summary_requested = False
         self.zoomed = False
@@ -772,7 +784,7 @@ class MainWindow(QMainWindow):
         remaining.pop(self.index)
         next_key = remaining[min(self.index, len(remaining) - 1)].key if remaining else None
         self._run(lambda: self.session.decide(photo, keep, next_key), "Moving files…",
-                  "Kept" if keep else "Rejected")
+                  "Kept" if keep else "Rejected", decision_count=1)
 
     def toggle_edit(self):
         if not self.current or self.mode != "edit" or not self.session or self.preview_photo:
@@ -841,7 +853,8 @@ class MainWindow(QMainWindow):
             self.session.decide_burst(photos, selected)
             return selected
         dialog.setEnabled(False)
-        self._run(operation, "Saving burst decision…", "Burst decision saved · Z undoes the whole group")
+        self._run(operation, "Saving burst decision…", "Burst decision saved · Z undoes the whole group",
+                  decision_count=sum(photo.state == "pending" for photo in photos))
 
     def _compare_closed(self, _result):
         dialog = self.compare
