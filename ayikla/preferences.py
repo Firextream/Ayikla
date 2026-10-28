@@ -13,6 +13,7 @@ class Preferences:
         self.path = self.directory / "ayikla_settings.jsonl"
         self.recent: list[str] = []
         self.window: dict = {}
+        self.write_xmp = True
         self.read_error = False
         try:
             data = self.path.read_bytes()
@@ -43,6 +44,11 @@ class Preferences:
                     and 640 <= geometry[2] <= 16000 and 400 <= geometry[3] <= 16000):
                 self.window = {"geometry": geometry, "fullscreen": bool(record.get("fullscreen")),
                                "maximized": bool(record.get("maximized"))}
+        elif record.get("type") == "xmp" and isinstance(record.get("enabled"), bool):
+            self.write_xmp = record["enabled"]
+
+    def set_xmp(self, enabled: bool):
+        self._append({"type": "xmp", "enabled": bool(enabled)})
 
     def _append(self, record: dict):
         if sys.platform != "win32":

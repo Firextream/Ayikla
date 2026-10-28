@@ -7,6 +7,8 @@ There are no deletion calls. Unmarking copies moves them into a private archive.
 from __future__ import annotations
 
 import ctypes
+import base64
+import hashlib
 import json
 import os
 import re
@@ -169,7 +171,8 @@ def _native_move_no_replace(source: Path, target: Path) -> None:
 class ShootSession:
     """One locked shoot. Close explicitly, or use as a context manager."""
 
-    def __init__(self, root: str | Path):
+    def __init__(self, root: str | Path, *, write_xmp: bool = False):
+        self.write_xmp = write_xmp
         self.root = Path(root).resolve(strict=True)
         if not self.root.is_dir():
             raise AyiklaError("Choose a shoot folder.")
@@ -177,6 +180,7 @@ class ShootSession:
         self._log = None
         self.transactions: dict[str, dict] = {}
         self.receipts: dict[str, dict[int, dict]] = {}
+        self.applied: dict[str, set[int]] = {}
         self.committed: set[str] = set()
         self.stack: list[str] = []
         self.edits: dict[str, str] = {}
@@ -327,19 +331,27 @@ class ShootSession:
             if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo"}:
                 raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
-                if operation["kind"] not in {"move", "copy"}:
+                if operation["kind"] not in {"move", "copy", "write"}:
                     raise RecoveryError("Journal contains an unknown file operation.")
-                self._path(operation["src"])
+                if operation["kind"] != "write":
+                    self._path(operation["src"])
+                else:
+                    base64.b64decode(operation["content"], validate=True)
                 self._path(operation["dst"])
-                if operation["kind"] == "copy":
+                if operation["kind"] in {"copy", "write"}:
                     self._path(operation["stage"])
             self.transactions[record["id"]] = record
             self.receipts[record["id"]] = {}
+            self.applied[record["id"]] = set()
             self.pending_id = record["id"]
         elif kind == "ready":
             if record["id"] != self.pending_id:
                 raise RecoveryError("Journal contains an unmatched copy receipt.")
             self.receipts[record["id"]][record["index"]] = record["fingerprint"]
+        elif kind == "applied":
+            if record["id"] != self.pending_id or not 0 <= record["index"] < len(self.transactions[record["id"]]["ops"]):
+                raise RecoveryError("Journal contains an unmatched operation checkpoint.")
+            self.applied[record["id"]].add(record["index"])
         elif kind == "commit":
             if record["id"] != self.pending_id:
                 raise RecoveryError("Journal contains an unmatched commit.")
@@ -460,19 +472,29 @@ class ShootSession:
                 "dst": self._relative(target), "fingerprint": fingerprint(source)}
 
     def _preflight(self, operations: list[dict]) -> None:
-        destinations: set[str] = set()
+        # Model earlier operations so archive-then-write and undo can share a path.
+        virtual: dict[str, dict | None] = {}
         for op in operations:
-            source, target = self._path(op["src"]), self._path(op["dst"])
-            if ignored_file_reason(source):
-                raise ConflictError(f"Hidden/system or helper files cannot be processed: {source.name}. "
-                                    "Press Retry to rescan the folder.")
-            if not same_file(source, op["fingerprint"]):
-                raise ConflictError(f"Source file was changed or is missing: {source.name}")
-            if self._existing(target) is not None:
+            target = self._path(op["dst"])
+            if op["kind"] != "write":
+                source = self._path(op["src"])
+                src_key = op["src"].casefold()
+                if src_key in virtual:
+                    matches = virtual[src_key] == op["fingerprint"]
+                else:
+                    matches = same_file(source, op["fingerprint"])
+                if not matches:
+                    raise ConflictError(f"Source file was changed or is missing: {source.name}")
+                if source.exists() and ignored_file_reason(source):
+                    raise ConflictError(f"Hidden/system or helper files cannot be processed: {source.name}. "
+                                        "Press Retry to rescan the folder.")
+                if op["kind"] == "move":
+                    virtual[src_key] = None
+            dst_key = op["dst"].casefold()
+            occupied = virtual[dst_key] is not None if dst_key in virtual else self._existing(target) is not None
+            if occupied:
                 raise ConflictError(f"Destination already exists; nothing overwritten: {op['dst']}")
-            if op["dst"].casefold() in destinations:
-                raise ConflictError("The operation contains the same destination twice.")
-            destinations.add(op["dst"].casefold())
+            virtual[dst_key] = op.get("fingerprint", {})
             for parent in target.parents:
                 if parent == self.root:
                     break
@@ -542,12 +564,88 @@ class ShootSession:
             return
         transaction_id = self.pending_id
         for index, operation in enumerate(self.transactions[transaction_id]["ops"]):
+            if index in self.applied[transaction_id]:
+                continue
             if operation["kind"] == "move":
                 self._finish_move(operation)
+            elif operation["kind"] == "write":
+                self._finish_write(transaction_id, index, operation)
             else:
                 self._finish_copy(transaction_id, index, operation)
+            self._append({"type": "applied", "id": transaction_id, "index": index})
+            self.applied[transaction_id].add(index)
+        outputs = {}
+        for index, operation in enumerate(self.transactions[transaction_id]["ops"]):
+            if operation["kind"] == "move":
+                outputs.pop(operation["src"].casefold(), None)
+            expected = (operation["fingerprint"] if operation["kind"] == "move"
+                        else self.receipts[transaction_id][index])
+            outputs[operation["dst"].casefold()] = (operation["dst"], expected)
+        for relative, expected in outputs.values():
+            if not same_file(self._path(relative), expected):
+                raise RecoveryError(f"Completed operation output changed externally: {relative}")
         self._append({"type": "commit", "id": transaction_id})
         self._apply_commit(transaction_id)
+
+    def _finish_write(self, transaction_id: str, index: int, operation: dict) -> None:
+        stage = self._path(operation["stage"])
+        receipt = self.receipts[transaction_id].get(index)
+        if receipt is None:
+            target = self._path(operation["dst"])
+            if self._existing(target) is not None:
+                raise ConflictError(f"Sidecar destination already exists: {operation['dst']}")
+            content = base64.b64decode(operation["content"], validate=True)
+            if self._existing(stage) is not None:
+                saved = self._path(f"{ARCHIVE}/yarim/{uuid.uuid4().hex}/{stage.name}")
+                saved.parent.mkdir(parents=True, exist_ok=True)
+                move_no_replace(stage, saved)
+            stage.parent.mkdir(parents=True, exist_ok=True)
+            with stage.open("xb") as stream:
+                if stream.write(content) != len(content):
+                    raise OSError("Sidecar was not fully written.")
+                stream.flush()
+                os.fsync(stream.fileno())
+            receipt = fingerprint(stage)
+            self._append({"type": "ready", "id": transaction_id, "index": index, "fingerprint": receipt})
+            self.receipts[transaction_id][index] = receipt
+        self._finish_move({"src": operation["stage"], "dst": operation["dst"], "fingerprint": receipt})
+
+    def _write_op(self, target: Path, content: bytes, transaction_id: str) -> dict:
+        relative = self._relative(target)
+        token = hashlib.sha256(relative.encode()).hexdigest()[:16]
+        return {"kind": "write", "dst": relative, "content": base64.b64encode(content).decode("ascii"),
+                "stage": f"{ARCHIVE}/islem/{transaction_id}/{token}.part"}
+
+    def _xmp_ops(self, photo: Photo, target: Path, rating: int, transaction_id: str, *, copy=False) -> list[dict]:
+        if not self.write_xmp:
+            return []
+        from .xmp import merge
+        source = (photo.raw or photo.jpeg).with_suffix(".xmp")
+        destination = target / source.name
+        existing_source = self._existing(source)
+        existing_dest = self._existing(destination)
+        original_path = existing_dest if copy else existing_source
+        if not copy and existing_dest and destination != source:
+            raise ConflictError(f"XMP destination already exists: {destination.name}")
+        read_path = original_path or (existing_source if copy else None)
+        if read_path:
+            self._path(self._relative(read_path))
+            expected = fingerprint(read_path)
+            content = read_path.read_bytes()
+            if not same_file(read_path, expected):
+                raise ConflictError("XMP changed while reading it.")
+        else:
+            content = None
+        try:
+            merged = merge(content, rating)
+        except (ValueError, UnicodeError) as error:
+            raise ConflictError(f"Cannot merge {source.name}: {error}") from error
+        operations = []
+        if original_path:
+            saved = self._path(f"{ARCHIVE}/xmp/{transaction_id}/{hashlib.sha256(self._relative(original_path).encode()).hexdigest()[:16]}/{original_path.name}")
+            operations.append(self._move_op(original_path, saved, expected))
+        operations.append(self._write_op(destination, merged, transaction_id))
+        return operations
 
     def recover_pending(self) -> None:
         if self.faulted:
@@ -565,6 +663,7 @@ class ShootSession:
         if len(photos) < 2 or len({p.key for p in photos}) != len(photos) or selected not in {p.key for p in photos}:
             raise ConflictError("Choose one frame from this burst.")
         operations, members = [], []
+        transaction_id = uuid.uuid4().hex
         for photo in photos:
             if self._photos.get(photo.key) != photo or photo.key in self.edits:
                 raise ConflictError("Burst changed or contains edit picks. Refresh or remove edit picks first.")
@@ -574,7 +673,9 @@ class ShootSession:
             target = self.root / (KEPT if state == "kept" else REJECTED)
             if photo.state != state:
                 operations.extend(self._move_op(path, target / path.name) for path in photo.files)
-        self._transaction("burst", selected, operations, {"mode": "edit", "key": selected}, members=members)
+            operations.extend(self._xmp_ops(photo, target, 1 if state == "kept" else -1, transaction_id))
+        self._transaction("burst", selected, operations, {"mode": "edit", "key": selected},
+                          transaction_id, members=members)
 
     def _check_raw_partner(self, photo: Photo) -> None:
         for extension in RAW_EXTENSIONS:
@@ -593,9 +694,11 @@ class ShootSession:
             raise ConflictError("This photo is no longer in the shoot root. Reopen the folder.")
         self._check_raw_partner(photo)
         target = self.root / (KEPT if keep else REJECTED)
+        transaction_id = uuid.uuid4().hex
         operations = [self._move_op(path, target / path.name) for path in photo.files]
+        operations.extend(self._xmp_ops(photo, target, 1 if keep else -1, transaction_id))
         self._transaction("keep" if keep else "reject", photo.key, operations,
-                          {"mode": "cull", "key": next_key})
+                          {"mode": "cull", "key": next_key}, transaction_id)
 
     @rescan_on_conflict
     def toggle_edit(self, photo: Photo) -> bool:
@@ -608,10 +711,7 @@ class ShootSession:
         if photo.key in self.edits:
             mark_id = self.edits[photo.key]
             mark = self.transactions[mark_id]
-            operations = [self._move_op(self._path(op["dst"]),
-                          self._path(f"{ARCHIVE}/kaldirilan/{transaction_id}/{Path(op['dst']).name}"),
-                          self.receipts[mark_id][index])
-                          for index, op in enumerate(mark["ops"])]
+            operations = self._inverse_ops(mark_id, transaction_id)
             self._transaction("edit_unmark", photo.key, operations, view,
                               transaction_id, mark_id=mark_id)
             return False
@@ -619,6 +719,7 @@ class ShootSession:
                        "dst": f"{EDIT}/{path.name}",
                        "stage": f"{ARCHIVE}/islem/{transaction_id}/{path.name}.part",
                        "fingerprint": fingerprint(path)} for path in photo.files]
+        operations.extend(self._xmp_ops(photo, self.root / EDIT, 3, transaction_id, copy=True))
         self._transaction("edit_mark", photo.key, operations, view, transaction_id)
         return True
 
@@ -630,15 +731,21 @@ class ShootSession:
         target_id = self.stack[-1]
         target = self.transactions[target_id]
         transaction_id = uuid.uuid4().hex
+        operations = self._inverse_ops(target_id, transaction_id)
+        self._transaction("undo", target["key"], operations, target["view_before"],
+                          transaction_id, undo_of=target_id)
+        return True
+
+    def _inverse_ops(self, target_id: str, transaction_id: str) -> list[dict]:
+        target = self.transactions[target_id]
         operations = []
         for index, op in reversed(list(enumerate(target["ops"]))):
             source = self._path(op["dst"])
             if op["kind"] == "move":
                 destination, expected = self._path(op["src"]), op["fingerprint"]
             else:
-                destination = self._path(f"{ARCHIVE}/geri_alinan/{transaction_id}/{source.name}")
+                token = hashlib.sha256(op["dst"].encode()).hexdigest()[:16]
+                destination = self._path(f"{ARCHIVE}/geri_alinan/{transaction_id}/{token}/{source.name}")
                 expected = self.receipts[target_id][index]
             operations.append(self._move_op(source, destination, expected))
-        self._transaction("undo", target["key"], operations, target["view_before"],
-                          transaction_id, undo_of=target_id)
-        return True
+        return operations

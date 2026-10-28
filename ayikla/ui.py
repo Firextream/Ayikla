@@ -196,6 +196,14 @@ class MainWindow(QMainWindow):
         self.open_button = button("Open folder", self.choose_folder, "ghost")
         self.open_button.setToolTip("Choose a shoot folder · Ctrl+O")
         header.addWidget(self.open_button)
+        self.settings_button = button("Settings", lambda: None, "ghost")
+        settings_menu = QMenu(self)
+        self.xmp_action = settings_menu.addAction("Write Lightroom XMP sidecars")
+        self.xmp_action.setCheckable(True)
+        self.xmp_action.setChecked(self.preferences.write_xmp)
+        self.xmp_action.triggered.connect(self._set_xmp)
+        self.settings_button.setMenu(settings_menu)
+        header.addWidget(self.settings_button)
         self.full_button = button("Full screen", self.toggle_fullscreen, "ghost")
         self.full_button.setToolTip("Full screen / window · F11")
         header.addWidget(self.full_button)
@@ -455,7 +463,20 @@ class MainWindow(QMainWindow):
         if self.session and Path(path).resolve() == self.session.root:
             self.refresh()
             return
-        self._run(lambda: ShootSession(path), "Opening shoot and journal…", "Shoot ready.", opening=True)
+        write_xmp = self.preferences.write_xmp
+        self._run(lambda: ShootSession(path, write_xmp=write_xmp), "Opening shoot and journal…", "Shoot ready.", opening=True)
+
+    def _set_xmp(self, enabled):
+        if self.busy:
+            self.xmp_action.setChecked(self.preferences.write_xmp)
+            return
+        try:
+            self.preferences.set_xmp(enabled)
+            if self.session:
+                self.session.write_xmp = enabled
+        except OSError as error:
+            self.xmp_action.setChecked(self.preferences.write_xmp)
+            self._show_error(error)
 
     def _run(self, operation, message: str, success: str, opening=False):
         if self.busy:
@@ -650,6 +671,7 @@ class MainWindow(QMainWindow):
         self.end_errors.setVisible(bool(paths))
 
     def _update_enabled(self):
+        self.settings_button.setEnabled(not self.busy)
         blocked = self.busy or bool(self.session and (self.session.pending_id or self.session.faulted))
         enabled = self.session is not None and not blocked
         has_photo = enabled and self.current is not None

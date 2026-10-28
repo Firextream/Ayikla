@@ -64,11 +64,17 @@ def test_delete_moves_pair_and_z_restores_exact_paths(app, window, shoot, raw, c
     wait(app, lambda: not window.busy and window.current is None)
     assert not hasattr(window, "last_error")
     assert window.session.snapshot().total == 1 and len(window.session.snapshot().rejected) == 1
-    assert {path.name: path.read_bytes() for path in (shoot / REJECTED).iterdir()} == original
+    assert {path.name: path.read_bytes() for path in (shoot / REJECTED).iterdir()
+            if path.suffix.lower() != ".xmp"} == original
+    from ayikla.xmp import XMP
+    from test_xmp import property_value
+    sidecar = next((shoot / REJECTED).glob("*.xmp"))
+    assert property_value(sidecar.read_bytes(), XMP, "Rating") == "-1"
     assert all(not (shoot / name).exists() for name in original)
     records = [json.loads(line) for line in (shoot / LOG).read_text("utf-8").splitlines()]
     decision = next(record for record in records if record["type"] == "begin")
-    assert decision["action"] == "reject" and all(op["kind"] == "move" for op in decision["ops"])
+    assert decision["action"] == "reject"
+    assert all(op["kind"] == "move" for op in decision["ops"] if not op["dst"].endswith(".xmp"))
     QTest.keyClick(window, Qt.Key.Key_Z)
     wait(app, lambda: not window.busy and window.current is not None)
     assert {name: (shoot / name).read_bytes() for name in original} == original
