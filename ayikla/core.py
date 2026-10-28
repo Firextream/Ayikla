@@ -189,6 +189,7 @@ class ShootSession:
         self.stack: list[str] = []
         self.edits: dict[str, str] = {}
         self.view: dict[str, str | None] = {"mode": "cull", "key": None}
+        self.resume: dict = {}
         self.pending_id: str | None = None
         self.recovery_count = 0
         self.faulted = False
@@ -205,6 +206,7 @@ class ShootSession:
             if self.pending_id:
                 self.recover_pending()
             self.rescan()  # One filesystem scan on open, after journal recovery.
+            self.resume_position = self.resolve_resume()
         except Exception:
             self.close()
             raise
@@ -362,6 +364,15 @@ class ShootSession:
             self._apply_commit(record["id"])
         elif kind == "view":
             self.view = self._validate_view(record["view"])
+            if "resume" in record:
+                resume = record["resume"]
+                self._validate_view(resume)
+                if (resume.get("filename") is not None and
+                        (not isinstance(resume["filename"], str) or Path(resume["filename"]).name != resume["filename"])):
+                    raise RecoveryError("Invalid resume filename.")
+                if resume.get("capture_time") is not None:
+                    datetime.fromisoformat(resume["capture_time"])
+                self.resume = dict(resume)
         elif kind != "repair":
             raise RecoveryError("Journal contains an unknown record.")
 
@@ -455,9 +466,48 @@ class ShootSession:
     def save_view(self, mode: str, key: str | None) -> None:
         self._ensure_ready()
         view = self._validate_view({"mode": mode, "key": key})
-        if self.view != view:
-            self._append({"type": "view", "view": view})
+        resume = dict(self.resume)
+        photo = self._photos.get(key) if key else None
+        if photo and (resume.get("key") != key or resume.get("mode") != mode or
+                      resume.get("filename") != photo.jpeg.name):
+            from .metadata import read_metadata
+            taken = read_metadata(photo.jpeg).taken
+            resume = {**view, "filename": photo.jpeg.name, "capture_time": taken.isoformat() if taken else None}
+        elif resume.get("mode") != mode:
+            resume = {**view, "filename": None, "capture_time": None}
+        if self.view != view or self.resume != resume:
+            self._append({"type": "view", "view": view, "resume": resume})
             self.view = view
+            self.resume = resume
+
+    def resolve_resume(self) -> tuple[str, str | None, bool]:
+        """Resolve a portable bookmark without guessing a renamed file's identity."""
+        mode = self.view["mode"]
+        key = self.view["key"] or self.resume.get("key")
+        candidates = self.snapshot().pending if mode == "cull" else self.snapshot().kept
+        if not self.resume and not key:
+            return mode, None, False
+        filename = self.resume.get("filename") if key == self.resume.get("key") else None
+        current = next((p for p in candidates if p.key == key and
+                        (not filename or p.jpeg.name.casefold() == filename.casefold())), None)
+        if current:
+            return mode, current.key, True
+        undecided = list(candidates if mode == "cull" else (p for p in candidates if p.key not in self.edits))
+        if not undecided and mode == "edit" and self.snapshot().pending:
+            mode, undecided = "cull", list(self.snapshot().pending)
+        if not undecided:
+            return mode, candidates[0].key if candidates else None, bool(candidates)
+        timestamp = self.resume.get("capture_time")
+        if timestamp:
+            from .metadata import read_metadata
+            reference = datetime.fromisoformat(timestamp)
+            dated = [(p, read_metadata(p.jpeg).taken) for p in undecided]
+            dated = [(p, taken) for p, taken in dated if taken is not None]
+            if dated:
+                closest = min(dated, key=lambda item: (abs((item[1] - reference).total_seconds()),
+                                                       natural_key(item[0].jpeg.name)))
+                return mode, closest[0].key, True
+        return mode, undecided[0].key, True
 
     def _ensure_ready(self) -> None:
         if self._log is None:

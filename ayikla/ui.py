@@ -404,6 +404,9 @@ class MainWindow(QMainWindow):
         footer.setSpacing(10)
         self.undo_button = button("Undo  ·  Z", self.undo, "ghost")
         footer.addWidget(self.undo_button)
+        self.start_first_button = button("Start from first", self.start_from_first, "ghost")
+        self.start_first_button.hide()
+        footer.addWidget(self.start_first_button)
         self.feedback = label("Choose a shoot folder to start.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
@@ -509,7 +512,7 @@ class MainWindow(QMainWindow):
         self.folder_label.setText(self.session.root.name)
         self.folder_label.setToolTip(str(self.session.root))
         self.setWindowTitle(f"{self.session.root.name} — Ayikla {__version__} · Beta")
-        self.mode = self.session.view["mode"]
+        self.mode, resume_key, resumed = self.session.resume_position
         self.pages.setCurrentIndex(1)
         recovered = self.session.recovery_count
         self.feedback.setText("Interrupted operation recovered." if recovered else self._success)
@@ -519,7 +522,22 @@ class MainWindow(QMainWindow):
         except OSError:
             self.feedback.setText("Recent folder could not be saved. Check write permission for the app folder.")
         self._load_metadata()
-        self.refresh(self.session.view["key"], rescan=False, allow_preview=True)
+        self.refresh(resume_key, rescan=False)
+        self.start_first_button.setVisible(resumed)
+        if resumed and self.current:
+            self.notify(f"Resumed at {self.current.jpeg.stem} · round {1 if self.mode == 'cull' else 2}")
+
+    def start_from_first(self):
+        if not self.session or self.busy or self.session.pending_id or self.session.faulted:
+            return
+        self.preview_photo = None
+        self.summary_requested = False
+        self.zoomed = False
+        self.canvas.set_zoom(False)
+        self.cache.discard_full_resolution()
+        self.refresh(rescan=False)
+        self.start_first_button.hide()
+        self.notify(f"Started from first · round {1 if self.mode == 'cull' else 2}")
 
     def _operation_finished(self, _result, error):
         self.busy = False
@@ -678,6 +696,8 @@ class MainWindow(QMainWindow):
 
     def _update_enabled(self):
         self.settings_button.setEnabled(not self.busy)
+        self.start_first_button.setEnabled(not self.busy and bool(self.session) and
+                                           not bool(self.session and (self.session.pending_id or self.session.faulted)))
         blocked = self.busy or bool(self.session and (self.session.pending_id or self.session.faulted))
         enabled = self.session is not None and not blocked
         has_photo = enabled and self.current is not None
