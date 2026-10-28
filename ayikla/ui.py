@@ -8,7 +8,7 @@ from PySide6.QtCore import QObject, QPoint, QRunnable, QRect, QSize, Qt, QThread
 from PySide6.QtGui import QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLayout, QMainWindow, QMessageBox,
-    QMenu, QPlainTextEdit, QProgressBar, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
+    QMenu, QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
 )
 
 from . import __version__
@@ -25,39 +25,47 @@ from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
 STYLE = """
 QWidget { background: #1a1a1a; color: #dddddd; font-family: 'Segoe UI'; font-size: 13px; }
 QLabel { background: transparent; }
-QLabel#brand { font-size: 17px; font-weight: 700; letter-spacing: 4px; color: #eeeeee; }
+QLabel#brand { font-size: 15px; font-weight: 700; letter-spacing: 3px; color: #eeeeee; }
 QLabel#muted { color: #999999; }
-QLabel#hero { font-size: 40px; font-weight: 600; color: #eeeeee; }
-QLabel#eyebrow { color: #999999; font-size: 11px; letter-spacing: 2px; }
-QLabel#counter { font-size: 14px; font-weight: 600; color: #dddddd; }
+QLabel#hero { font-size: 20px; font-weight: 600; color: #eeeeee; }
+QLabel#eyebrow { color: #999999; font-size: 12px; letter-spacing: 2px; }
+QLabel#counter { font-size: 12px; color: #aaaaaa; }
 QLabel#filename { font-size: 13px; font-weight: 600; color: #dddddd; }
-QLabel#badge { border-radius: 4px; padding: 4px 7px; background: #292929; color: #aaaaaa; font-size: 11px; }
-QLabel#stepNumber { font-size: 24px; font-weight: 500; color: #777777; }
-QLabel#stepTitle { font-size: 14px; font-weight: 600; color: #e0e0e0; }
-QLabel#summaryTitle { font-size: 32px; font-weight: 600; color: #eeeeee; }
-QLabel#summaryCounts { font-size: 17px; color: #cccccc; }
+QLabel#badge { border-radius: 4px; padding: 3px 6px; background: #292929; color: #aaaaaa; font-size: 12px; }
+QLabel#stepNumber { font-size: 20px; font-weight: 500; color: #999999; }
+QLabel#stepTitle { font-size: 15px; font-weight: 600; color: #e0e0e0; }
+QLabel#summaryTitle { font-size: 20px; font-weight: 600; color: #eeeeee; }
+QLabel#summaryCounts { font-size: 15px; color: #cccccc; }
 QFrame#stepCard, QFrame#summaryCard { background: #202020; border: 1px solid #333333; border-radius: 12px; }
-QFrame#bar { background: #202020; border: 1px solid #303030; border-radius: 10px; }
+QFrame#bar { background: #1a1a1a; border: none; border-top: 1px solid #303030; }
 QPushButton { background: #262626; border: 1px solid #3a3a3a; border-radius: 6px;
-              padding: 7px 12px; color: #cccccc; font-weight: 500; }
+              padding: 6px 8px; color: #cccccc; font-weight: 500; }
 QPushButton:hover { background: #323232; border-color: #666666; color: #eeeeee; }
 QPushButton:pressed { background: #3c3c3c; }
 QPushButton:checked { background: #383838; border-color: #777777; color: #eeeeee; }
-QPushButton#ghost { background: transparent; border-color: transparent; color: #999999; }
+QPushButton#ghost { background: transparent; border-color: transparent; color: #aaaaaa; }
 QPushButton#ghost:hover { background: #282828; border-color: #3a3a3a; color: #dddddd; }
 QPushButton#recent { text-align: left; background: #202020; border-color: #303030; padding: 9px 12px; }
 QPushButton#recent:hover { background: #292929; border-color: #555555; }
-QPushButton:disabled { color: #686868; background: #222222; border-color: #303030; }
-QPushButton#ghost:disabled { color: #555555; background: transparent; border-color: transparent; }
+QPushButton:disabled { color: #7d7d7d; background: #222222; border-color: #303030; }
+QPushButton#ghost:disabled { color: #767676; background: transparent; border-color: transparent; }
+QFrame#headerGroup QPushButton { padding: 6px 0; }
+QPushButton::menu-indicator { image: none; width: 0px; }
+QFrame#statusRow QPushButton, QFrame#statusRow QLabel { font-size: 12px; }
+QFrame#compareCell { border: 2px solid transparent; border-radius: 6px; }
+QFrame#compareCell[selected="true"] { border-color: #dedede; }
+QFrame#compareCell QLabel { border: none; font-size: 13px; }
 QPushButton#primary { background: #dedede; color: #1a1a1a; border: 0; padding: 12px 24px; font-weight: 600; }
 QPushButton#primary:hover { background: #eeeeee; }
-QPushButton#keep { background: #d2d2d2; color: #1a1a1a; border: 0; min-width: 154px; padding: 10px 18px; font-weight: 600; }
-QPushButton#keep:hover { background: #eeeeee; }
+QPushButton#keep { background: #d2d2d2; color: #1a1a1a; border: 2px solid #d2d2d2; min-width: 86px; font-weight: 600; }
+QPushButton#keep:hover { background: #eeeeee; border-color: #779b82; }
+QPushButton#keep:pressed { background: #dedede; border-color: #779b82; }
 QPushButton#reject { background: #252525; color: #cccccc; border-color: #454545;
-                    min-width: 154px; padding: 10px 18px; }
-QPushButton#reject:hover { background: #3b3b3b; }
+                    min-width: 96px; border: 2px solid #454545; }
+QPushButton#reject:hover { background: #302929; border-color: #b58282; }
+QPushButton#reject:pressed { background: #382c2c; border-color: #b58282; }
 QPushButton#keep:disabled, QPushButton#reject:disabled, QPushButton#primary:disabled {
-    background: #292929; color: #606060; border: 1px solid #333333; }
+    background: #292929; color: #818181; border: 2px solid #333333; }
 QScrollBar:horizontal { background: #252525; height: 8px; margin: 0; }
 QScrollBar::handle:horizontal { background: #555555; min-width: 28px; border-radius: 3px; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
@@ -179,13 +187,20 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(20, 12, 20, 10)
         layout.setSpacing(10)
         header = QHBoxLayout()
-        header.setSpacing(8)
-        header.addWidget(label("AYIKLA", "brand"))
-        header.addSpacing(14)
+        header.setSpacing(24)
+        identity = QHBoxLayout()
+        identity.setSpacing(16)
+        identity.addWidget(label("AYIKLA", "brand"))
         self.folder_label = ElidedLabel("From shoot to shortlist.")
         self.folder_label.setObjectName("muted")
-        header.addWidget(self.folder_label, 1)
-        self.folders_button = button("Folders", lambda: None, "ghost")
+        identity.addWidget(self.folder_label, 1)
+        header.addLayout(identity, 1)
+        self.header_group = QFrame()
+        self.header_group.setObjectName("headerGroup")
+        menus = QHBoxLayout(self.header_group)
+        menus.setContentsMargins(0, 0, 0, 0)
+        menus.setSpacing(24)
+        self.folders_button = button("Folders ▾", lambda: None, "ghost")
         self.folder_menu = QMenu(self)
         self.folder_actions = {}
         for name, title in (("", "Shoot folder"), (KEPT, "Kept photos · 01_secilen"),
@@ -195,13 +210,18 @@ class MainWindow(QMainWindow):
             self.folder_actions[name] = action
             if not name:
                 self.folder_menu.addSeparator()
+        self.folder_menu.addSeparator()
+        self.ignored_action = self.folder_menu.addAction("")
+        self.ignored_action.setEnabled(False)
+        self.ignored_action.setVisible(False)
         self.folders_button.setMenu(self.folder_menu)
         self.folders_button.setEnabled(False)
-        header.addWidget(self.folders_button)
-        self.open_button = button("Open folder", self.choose_folder, "ghost")
+        menus.addWidget(self.folders_button)
+        self.open_button = button("Open", self.choose_folder, "ghost")
+        self.open_button.setAccessibleName("Open folder")
         self.open_button.setToolTip("Choose a shoot folder · Ctrl+O")
-        header.addWidget(self.open_button)
-        self.settings_button = button("Settings", lambda: None, "ghost")
+        menus.addWidget(self.open_button)
+        self.settings_button = button("Settings ▾", lambda: None, "ghost")
         settings_menu = QMenu(self)
         self.xmp_action = settings_menu.addAction("Write Lightroom XMP sidecars")
         self.xmp_action.setCheckable(True)
@@ -211,14 +231,16 @@ class MainWindow(QMainWindow):
         self.import_action = settings_menu.addAction("Import from card… · Ctrl+I")
         self.import_action.triggered.connect(self.choose_import)
         self.settings_button.setMenu(settings_menu)
-        header.addWidget(self.settings_button)
+        menus.addWidget(self.settings_button)
         self.full_button = button("Full screen", self.toggle_fullscreen, "ghost")
         self.full_button.setToolTip("Full screen / window · F11")
-        header.addWidget(self.full_button)
-        help_button = button("Help  ·  H", self.toggle_help, "ghost")
-        header.addWidget(help_button)
-        for control in (self.folders_button, self.open_button, self.full_button, help_button):
+        menus.addWidget(self.full_button)
+        self.help_button = button("Help", self.toggle_help, "ghost")
+        self.help_button.setToolTip("Keyboard help · H / ?")
+        menus.addWidget(self.help_button)
+        for control in (self.folders_button, self.open_button, self.settings_button, self.full_button, self.help_button):
             control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+        header.addWidget(self.header_group)
         layout.addLayout(header)
         self.pages = QStackedWidget()
         layout.addWidget(self.pages, 1)
@@ -241,11 +263,12 @@ class MainWindow(QMainWindow):
         description = label("Open your shoot. Choose what to keep, then what to edit\n"
                             "in Lightroom. JPEG/TIFF scans work too.", "muted")
         description.setWordWrap(True)
-        description.setStyleSheet("font-size: 14px;")
+        description.setStyleSheet("font-size: 13px;")
         intro.addWidget(description)
         steps = QHBoxLayout()
         steps.setSpacing(12)
-        for number, title, text in (("01", "Keep / Reject", "Keep → 01_secilen\nEle / Delete → _red"),
+        self.step_cards = []
+        for number, title, text in (("01", "Keep / Reject", "Keep → 01_secilen\nReject / Delete → _red"),
                                     ("02", "Edit / Lightroom", "E → copy into 02_edit\nReady to import into Lightroom")):
             card = QFrame()
             card.setObjectName("stepCard")
@@ -254,7 +277,13 @@ class MainWindow(QMainWindow):
             card_layout.setSpacing(7)
             card_layout.addWidget(label(number, "stepNumber"))
             card_layout.addWidget(label(title, "stepTitle"))
-            card_layout.addWidget(label(text, "muted"))
+            body = label(text, "muted")
+            body.setWordWrap(True)
+            body.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Minimum)
+            card_layout.addWidget(body)
+            card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+            card.setMinimumHeight(card_layout.sizeHint().height())
+            self.step_cards.append(card)
             steps.addWidget(card, 1)
         intro.addLayout(steps)
         start = button("Choose a shoot folder", self.choose_folder, "primary")
@@ -286,17 +315,9 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.colors_button)
         toolbar.addStretch()
         self.counter = label("", "counter")
+        self.counter.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         toolbar.addWidget(self.counter)
         content.addLayout(toolbar)
-        self.ignored_notice = label("", "muted")
-        self.ignored_notice.hide()
-        content.addWidget(self.ignored_notice)
-        self.progress = QProgressBar()
-        self.progress.setTextVisible(False)
-        content.addWidget(self.progress)
-        self.round_hint = label("", "muted")
-        self.round_hint.setWordWrap(True)
-        content.addWidget(self.round_hint)
         self.canvas = PhotoCanvas()
         self.viewer = QStackedWidget()
         self.viewer.addWidget(self.canvas)
@@ -356,71 +377,77 @@ class MainWindow(QMainWindow):
         self.filmstrip.activated.connect(self.jump_to)
         content.addWidget(self.filmstrip)
 
+        controls = QFrame()
+        self.controls = controls
+        controls.setObjectName("bar")
+        actions = QHBoxLayout(controls)
+        actions.setContentsMargins(0, 8, 0, 0)
+        actions.setSpacing(8)
         self.photo_info = QWidget()
+        self.photo_info.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         info = QHBoxLayout(self.photo_info)
         info.setContentsMargins(0, 0, 0, 0)
         info.setSpacing(7)
         self.filename = ElidedLabel()
         self.filename.setObjectName("filename")
-        self.filename.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-        self.filename.setMinimumWidth(120)
-        self.filename.setMaximumWidth(280)
-        info.addWidget(self.filename)
+        self.filename.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.filename.setMinimumWidth(72)
+        self.filename.setMaximumWidth(220)
+        info.addWidget(self.filename, 1)
         self.raw_badge = label("", "badge")
         info.addWidget(self.raw_badge)
-        self.edit_badge = label("PICKED FOR EDITING", "badge")
+        self.edit_badge = label("Edit pick", "badge")
         self.edit_badge.setStyleSheet("color: #dedede; background: #363636;")
         info.addWidget(self.edit_badge)
-        info.addStretch(1)
-        self.remaining = label("", "muted")
-        info.addWidget(self.remaining)
-        self.current_folder_button = button("Open folder  ↗", self.open_current_folder, "ghost")
-        self.zoom_button = button("100%  ·  F", self.toggle_zoom, "ghost")
-        self.info_button = button("Info  ·  I", self.toggle_info, "ghost")
-        self.strip_button = button("Filmstrip  ·  T", self.toggle_filmstrip, "ghost")
+        self.current_folder_button = button("↗", self.open_current_folder, "ghost")
+        self.current_folder_button.setAccessibleName("Open current photo folder")
+        self.current_folder_button.setToolTip("Open this photo's folder")
+        self.zoom_button = button("100%", self.toggle_zoom, "ghost")
+        self.zoom_button.setToolTip("100% / Fit · F")
+        self.info_button = button("Info", self.toggle_info, "ghost")
+        self.info_button.setToolTip("Photo information · I")
+        self.strip_button = button("Filmstrip", self.toggle_filmstrip, "ghost")
+        self.strip_button.setToolTip("Show / hide filmstrip · T")
         info.addWidget(self.current_folder_button)
-        for control in (self.zoom_button, self.info_button, self.strip_button):
+        for control in (self.info_button, self.strip_button, self.zoom_button):
             info.addWidget(control)
         for control in (self.current_folder_button, self.zoom_button, self.info_button, self.strip_button):
             control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
-        content.addWidget(self.photo_info)
-
-        controls = QFrame()
-        self.controls = controls
-        controls.setObjectName("bar")
-        actions = QHBoxLayout(controls)
-        actions.setContentsMargins(8, 7, 8, 7)
-        actions.setSpacing(6)
+        info.addStretch(1)
+        actions.addWidget(self.photo_info, 1)
         self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
         self.reject_button.setToolTip("Moves the photo + matching RAW to _red. Z to undo; no files are deleted.")
-        actions.addWidget(self.reject_button)
-        actions.addStretch()
-        self.previous_button = button("↑  Previous", lambda: self.navigate(-1), "ghost")
-        self.next_button = button("Next  ↓", lambda: self.navigate(1), "ghost")
+        self.previous_button = button("↑", lambda: self.navigate(-1), "ghost")
+        self.previous_button.setAccessibleName("Previous photo")
+        self.previous_button.setToolTip("Previous photo · ↑")
+        self.next_button = button("↓", lambda: self.navigate(1), "ghost")
+        self.next_button.setAccessibleName("Next photo")
         self.next_button.setToolTip("Next photo without deciding · Space / ↓")
         actions.addWidget(self.previous_button)
         actions.addWidget(self.next_button)
-        actions.addStretch()
-        self.keep_button = button("Keep  ·  → / Enter", lambda: self.decide(True), "keep")
-        self.keep_button.setToolTip("Moves the photo + matching RAW to 01_secilen for keeping.")
+        actions.addWidget(self.reject_button)
+        self.keep_button = button("Keep  ·  →", lambda: self.decide(True), "keep")
+        self.keep_button.setToolTip("Keep · → / Enter · moves photo + matching RAW to 01_secilen")
         actions.addWidget(self.keep_button)
-        self.mark_button = button("Pick for editing  ·  E", self.toggle_edit, "keep")
+        self.mark_button = button("Edit pick  ·  E", self.toggle_edit, "keep")
         self.mark_button.setToolTip("Copies the photo + matching RAW to 02_edit for Lightroom.")
         actions.addWidget(self.mark_button)
-        self.summary_button = button("Round summary", self.show_summary)
+        self.summary_button = button("Summary", self.show_summary, "ghost")
+        self.summary_button.setToolTip("Round 2 summary")
         actions.addWidget(self.summary_button)
         content.addWidget(controls)
         self.pages.addWidget(gallery)
 
-        footer = QHBoxLayout()
+        self.status_row = QFrame()
+        self.status_row.setObjectName("statusRow")
+        footer = QHBoxLayout(self.status_row)
+        footer.setContentsMargins(0, 0, 0, 0)
         footer.setSpacing(10)
         self.undo_button = button("Undo  ·  Z", self.undo, "ghost")
         footer.addWidget(self.undo_button)
         self.start_first_button = button("Start from first", self.start_from_first, "ghost")
         self.start_first_button.hide()
         footer.addWidget(self.start_first_button)
-        self.progress_line = label("", "muted")
-        footer.addWidget(self.progress_line)
         self.feedback = label("Choose a shoot folder to start.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
@@ -428,7 +455,7 @@ class MainWindow(QMainWindow):
         self.retry_button.hide()
         footer.addWidget(self.retry_button)
         footer.addWidget(label("Auto-save", "muted"))
-        layout.addLayout(footer)
+        layout.addWidget(self.status_row)
         self.undo_button.setEnabled(False)
         self.setCentralWidget(root)
         self.toast = FadingOverlay(root)
@@ -639,51 +666,43 @@ class MainWindow(QMainWindow):
             return
         try:
             snapshot = self.session.rescan() if rescan else self.session.snapshot()
-            self.progress_line.setText(self.pace.line(snapshot, self.mode, len(self.session.edits)))
-            self.ignored_notice.setText(self.session.ignored_notice)
-            self.ignored_notice.setVisible(bool(self.session.ignored_notice))
+            self.ignored_action.setText(self.session.ignored_notice)
+            self.ignored_action.setVisible(bool(self.session.ignored_notice))
             self.photos = snapshot.pending if self.mode == "cull" else snapshot.kept
             self.index = next((i for i, photo in enumerate(self.photos) if photo.key == preferred), 0)
             if allow_preview and preferred and not any(photo.key == preferred for photo in self.photos):
                 self.preview_photo = next((photo for photo in self.session.all_photos() if photo.key == preferred), None)
             if self.mode == "cull":
-                self.round_hint.setText("ROUND 1 · KEEP OR REJECT: Keep → 01_secilen · Reject / Delete → _red "
-                                        "(Z to undo) · Decisions are saved automatically.")
-                position = len(snapshot.kept) + len(snapshot.rejected) + self.index + 1 if self.photos else snapshot.total
-                self.counter.setText(f"{position} / {snapshot.total}  ·  {len(snapshot.kept)} kept  ·  {len(snapshot.rejected)} rejected")
-                self.remaining.setText(f"{len(snapshot.pending)} undecided")
+                self.counter.setText(self.pace.line(snapshot, self.mode, len(self.session.edits)))
             else:
-                self.round_hint.setText("ROUND 2 · EDIT / LIGHTROOM: E → copy photo + matching RAW to 02_edit · "
-                                        "E again: remove edit pick · Decisions are saved automatically.")
                 position = self.index + 1 if self.photos else 0
-                self.counter.setText(f"{position} / {len(snapshot.kept)}  ·  {len(self.session.edits)} picked for editing")
-                self.remaining.setText("01_secilen → 02_edit · copy")
-            self.progress.setRange(0, max(snapshot.total, 1))
-            self.progress.setValue(len(snapshot.kept) + len(snapshot.rejected))
+                count = len(self.session.edits)
+                self.counter.setText(f"Round 2 · {position} / {len(snapshot.kept)} · {count} edit {'pick' if count == 1 else 'picks'}")
             self.cull_button.setChecked(self.mode == "cull")
             self.edit_button.setChecked(self.mode == "edit")
             photo = self.current
             self.canvas.image = QImage()
             if photo:
                 self.filename.setText(photo.jpeg.name)
+                self.filename.setMaximumWidth(min(220, max(72, self.filename.fontMetrics().horizontalAdvance(photo.jpeg.name) + 4)))
                 self.raw_badge.setText(f"{photo.jpeg.suffix[1:].upper()} + {photo.raw.suffix[1:].upper()}" if photo.raw
-                                       else f"{photo.jpeg.suffix[1:].upper()} · Film / scan · No matching RAW")
+                                       else f"{photo.jpeg.suffix[1:].upper()} · No RAW")
+                self.raw_badge.setToolTip("Paired preview and RAW" if photo.raw else "Film / scan · No matching RAW")
                 self.raw_badge.setStyleSheet("" if photo.raw else "color: #cccccc; background: #303030;")
                 self.raw_badge.show()
                 self.edit_badge.setVisible(photo.key in self.session.edits)
-                self.mark_button.setText("Remove edit pick  ·  E" if photo.key in self.session.edits else "Pick for editing  ·  E")
+                self.mark_button.setText("Remove pick  ·  E" if photo.key in self.session.edits else "Edit pick  ·  E")
                 self.canvas.message = "Loading…"
                 self.session.save_view(self.mode, photo.key)
                 self._request_image()
                 self.viewer.setCurrentIndex(0)
                 if self.preview_photo:
-                    self.counter.setText(f"{photo.jpeg.name}  ·  {'rejected photo · preview' if photo.state == 'rejected' else 'preview'}")
+                    self.filename.setToolTip(f"{photo.jpeg.name} · {photo.state} photo · preview")
             else:
                 self.cache.clear()
                 self.filename.setText("Round 1 complete" if self.mode == "cull" and snapshot.total else "No photos")
                 if self.summary_requested:
                     self.filename.setText("Round 2 summary")
-                    self.counter.setText("Round summary")
                 self.raw_badge.hide()
                 self.edit_badge.hide()
                 if self.mode == "cull":
@@ -714,7 +733,7 @@ class MainWindow(QMainWindow):
             return
         neighbors = [self.photos[index].jpeg for offset in (1, 2, -1)
                      if 0 <= (index := self.index + offset) < len(self.photos)]
-        bounds = (self.canvas.size() - QSize(16, 16)) * self.devicePixelRatioF()
+        bounds = (self.canvas.size() - QSize(32, 32)) * self.devicePixelRatioF()
         if getattr(self, "zoomed", False):
             self.cache.show(self.current.jpeg, [], bounds, full_resolution=True)
         else:
@@ -731,6 +750,7 @@ class MainWindow(QMainWindow):
             self.canvas.message = (f"Could not open {kind}.\n{self.current.jpeg.name}\n{error}\n"
                                    "Press Enter to keep or Delete / X to reject this file.") if error else ""
             self._update_decode_summary()
+            self.canvas.position_overlays()
             self.canvas.update()
 
     def _update_decode_summary(self):
@@ -780,7 +800,6 @@ class MainWindow(QMainWindow):
         summary_visible = self.viewer.currentIndex() == 1
         self.controls.setVisible(not summary_visible)
         self.photo_info.setVisible(not summary_visible)
-        self.remaining.setVisible(self.width() >= 1180)
 
     def navigate(self, offset: int):
         if self.busy or not self.session or self.session.pending_id or self.session.faulted or not self.photos:
@@ -859,7 +878,6 @@ class MainWindow(QMainWindow):
         if hasattr(self, "toast"):
             self._position_toast()
             self.canvas.position_overlays()
-            self.remaining.setVisible(self.width() >= 1180)
 
     def toggle_zoom(self):
         if not self.current or self.busy:

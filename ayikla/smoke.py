@@ -10,7 +10,7 @@ from pathlib import Path
 from PIL import Image, TiffImagePlugin
 from PySide6.QtCore import QByteArray, QBuffer, QIODevice, QPointF, Qt, QTimer
 from PySide6.QtGui import QColor, QFontDatabase, QImage, QKeyEvent, QLinearGradient, QPainter, QPen, QPolygonF
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QLabel
 
 from .core import EDIT, KEPT, REJECTED
 from . import __version__
@@ -79,6 +79,9 @@ def run_smoke(app, window, output: str) -> None:
         with (shoot / name).open("xb") as stream:
             stream.write(payload)
     window.grab().save(str(directory / "welcome.png"))
+    for card in window.step_cards:
+        body = card.findChildren(QLabel)[-1]
+        assert body.wordWrap() and body.height() >= body.fontMetrics().lineSpacing() * 2
     started, stage, finished = time.monotonic(), 0, False
     checks = []
     timer = QTimer(window)
@@ -126,8 +129,9 @@ def run_smoke(app, window, output: str) -> None:
                 assert window.session and window.current.key == "img_0001"
                 assert window.session.snapshot().total == 4
                 assert window.session.ignored_files == {"appledouble": 8, "metadata": 3}
-                assert "KEEP OR REJECT" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
-                assert "8 macOS helper files (._) ignored" in window.ignored_notice.text()
+                assert window.photo_info.parentWidget() is window.controls
+                assert window.counter.text().startswith("Round 1") and "01_secilen" in window.keep_button.toolTip()
+                assert "8 macOS helper files (._) ignored" in window.ignored_action.text()
                 if window.canvas.image.isNull():
                     return
                 screenshot("gallery")
@@ -146,6 +150,7 @@ def run_smoke(app, window, output: str) -> None:
                 assert not window.zoomed and window.canvas.image.width() < 6000
                 key(Qt.Key.Key_I)
                 assert "1/320 s" in window.canvas.info.text() and "Burst 1/4" in window.canvas.hud.text()
+                assert window.canvas.image_rect().contains(window.canvas.hud.geometry().topLeft())
                 screenshot("info")
                 key(Qt.Key.Key_I)
                 key(Qt.Key.Key_T)
@@ -162,7 +167,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_Return)
             elif stage == 5:
                 assert (shoot / KEPT / "img_0001.cR3").exists()
-                assert window.current.key == "img_0002" and "No matching RAW" in window.raw_badge.text()
+                assert window.current.key == "img_0002" and "No matching RAW" in window.raw_badge.toolTip()
                 assert window.toast.text() == "Kept"
                 key(Qt.Key.Key_Delete)
             elif stage == 6:
@@ -174,7 +179,7 @@ def run_smoke(app, window, output: str) -> None:
                 key(Qt.Key.Key_M)
             elif stage == 8:
                 assert window.current.key == "img_0001" and window.mode == "edit"
-                assert "LIGHTROOM" in window.round_hint.text() and "02_edit" in window.round_hint.text()
+                assert window.counter.text().startswith("Round 2") and "02_edit" in window.mark_button.toolTip()
                 key(Qt.Key.Key_E)
             elif stage == 9:
                 assert (shoot / EDIT / "img_0001.cR3").read_bytes() == (shoot / KEPT / "img_0001.cR3").read_bytes()
@@ -308,6 +313,9 @@ def run_smoke(app, window, output: str) -> None:
                 dialog = window.compare
                 if any(p.image.isNull() for p in dialog.panes):
                     return
+                assert dialog.cells[0].property("selected") and dialog.cells[0].frameWidth() == 2
+                assert len({button.height() for button in dialog.buttons}) == 1
+                assert all(pane.corner_label.text() == str(i + 1) for i, pane in enumerate(dialog.panes))
                 assert dialog.grab().save(str(directory / "burst-compare.png"))
                 key(Qt.Key.Key_F, dialog)
             elif stage == 30:
@@ -403,9 +411,10 @@ def run_smoke(app, window, output: str) -> None:
                 dialog.start()
                 assert dialog.grab().save(str(directory / "import-card.png"))
             elif stage == 41:
-                if window.import_dialog.running:
+                # Import completion queues opening the shoot on the next Qt turn.
+                if window.import_dialog.running or not window.session.root.name.endswith("_club"):
                     return
-                assert window.session.root.name.endswith("_club") and window.session.snapshot().total == 12
+                assert window.session.snapshot().total == 12
                 assert window.preferences.import_destination == str(window._smoke_destination)
                 assert len(list(window._smoke_card.rglob("*.CR3"))) == 12
                 window.decide(True)
@@ -413,7 +422,7 @@ def run_smoke(app, window, output: str) -> None:
                 window.decide(True)
             elif stage == 51:
                 assert window.pace.decisions == 10
-                assert "10 / 12 decided" in window.progress_line.text() and "min left" in window.progress_line.text()
+                assert "10 / 12" in window.counter.text() and "~" in window.counter.text() and "min" in window.counter.text()
                 screenshot("progress-line")
                 window.choose_import()
                 dialog = window.import_dialog
@@ -439,6 +448,7 @@ def run_smoke(app, window, output: str) -> None:
                 checks.append("1.4 portable resume toast, start from first and median ETA after ten decisions")
                 checks.append("1.4 recursive card import with SHA-256, remembered root, duplicate skip after culling and cooperative cancellation")
                 checks.append("1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo")
+                checks.append("1.5 wrapped start cards, single progress counter, two-row footer, image-anchored burst badge and keeper border/number badges")
                 finish()
                 return
             stage += 1

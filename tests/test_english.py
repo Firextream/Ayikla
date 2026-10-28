@@ -15,7 +15,7 @@ def test_english_start_help_and_errors():
     app = QApplication.instance() or QApplication([])
     window = MainWindow()
     try:
-        assert window.open_button.text() == "Open folder"
+        assert window.open_button.text() == "Open"
         assert window.retry_button.text() == "Retry"
         assert "Keep" in window.keep_button.text()
         assert "Reject" in window.reject_button.text()

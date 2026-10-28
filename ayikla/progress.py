@@ -33,4 +33,5 @@ class DecisionPace:
         if mode == "edit":
             return f"Round 2 · {edit_count} / {len(snapshot.kept)} edit picks"
         decided = len(snapshot.kept) + len(snapshot.rejected)
-        return f"Round 1 · {decided} / {snapshot.total} decided" + self.remaining(len(snapshot.pending))
+        return (f"Round 1 · {decided} / {snapshot.total} · {len(snapshot.kept)} kept · {len(snapshot.rejected)} rejected"
+                + self.remaining(len(snapshot.pending)).replace(" left", ""))

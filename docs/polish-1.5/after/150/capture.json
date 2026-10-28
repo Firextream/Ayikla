@@ -1,0 +1,139 @@
+{
+  "version": "1.5.0b1",
+  "backend": "windows",
+  "scale": 1.5,
+  "screens": {
+    "start": {
+      "logical": [
+        1280,
+        720
+      ],
+      "pixels": [
+        1920,
+        1080
+      ],
+      "dpr": 1.5,
+      "photo_height": 389,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "cards": [
+          {
+            "card_height": 127,
+            "body_height": 36,
+            "needed": 36
+          },
+          {
+            "card_height": 127,
+            "body_height": 36,
+            "needed": 36
+          }
+        ]
+      }
+    },
+    "round1": {
+      "logical": [
+        1280,
+        720
+      ],
+      "pixels": [
+        1920,
+        1080
+      ],
+      "dpr": 1.5,
+      "photo_height": 525,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 43,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.83,
+          3.83,
+          3.73
+        ],
+        "photo_height": 525
+      }
+    },
+    "burst": {
+      "logical": [
+        1200,
+        787
+      ],
+      "pixels": [
+        1800,
+        1181
+      ],
+      "dpr": 1.5,
+      "photo_height": 525,
+      "checks": {
+        "selection_border": 2,
+        "number_badges_on_images": true,
+        "button_height": 34,
+        "button_gaps": 12
+      }
+    },
+    "round2": {
+      "logical": [
+        1280,
+        720
+      ],
+      "pixels": [
+        1920,
+        1080
+      ],
+      "dpr": 1.5,
+      "photo_height": 525,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 43,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.83,
+          3.83,
+          3.73
+        ],
+        "photo_height": 525
+      }
+    },
+    "summary": {
+      "logical": [
+        1280,
+        720
+      ],
+      "pixels": [
+        1920,
+        1080
+      ],
+      "dpr": 1.5,
+      "photo_height": 525,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "photo_controls_hidden": true,
+        "summary_width": 520
+      }
+    }
+  }
+}

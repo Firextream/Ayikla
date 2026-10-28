@@ -4,11 +4,11 @@
 
 A simple, keyboard-first Windows photo culling app for RAW+JPEG shoots. First choose what to keep, then pick what to edit in Lightroom.
 
-**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.4.0b1 Beta**
+**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.5.0b1 Beta**
 
 ### [Latest published download · 1.2.0b1 · Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
 
-1.4.0b1 is a local beta candidate; its release has not been tagged or published.
+1.5.0b1 is a local beta candidate; its release has not been tagged or published.
 Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
 
 [Release notes](https://github.com/Firextream/Ayikla/releases/tag/v1.2.0b1) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
@@ -21,7 +21,7 @@ Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
 
 1. Download the Windows ZIP above and extract **the entire archive**. GitHub's “Source code” archives are not the runnable app.
 2. Open `Ayikla/Ayikla.exe`. **No Python installation needed.** Keep `_internal` next to the executable.
-3. Choose **Open folder** and select the folder containing your JPEGs. Start with a separate copy of 20–50 photo pairs for your first beta test.
+3. Choose **Open** and select the folder containing your JPEGs. Start with a separate copy of 20–50 photo pairs for your first beta test.
 
 The package is unsigned, so Windows may show a warning. If it will not open, report the exact message; do not disable your security software. The included `MasaustuKisayolu.ps1` script can create an optional desktop shortcut without overwriting an existing one.
 
@@ -78,10 +78,23 @@ photo was moved or renamed, Ayikla chooses the nearest undecided capture time;
 with no timestamps it uses natural filename order. In round 2 the fallback
 prefers kept photos not yet picked, then undecided round 1 photos if needed.
 
-The footer shows round 1 decided/total counts. After ten decisions in the current
+The single top-right progress line shows round 1 decided/total, kept and rejected counts. After ten decisions in the current
 session it adds an approximate remaining time based on the median seconds per
 frame (burst decisions count their newly decided frames). It resets when opening
-another shoot; previous sessions are not included. Round 2 shows edit-pick counts.
+another shoot; previous sessions are not included. Round 2 shows the current position and edit-pick counts.
+
+The photo now has a quieter two-row footer and 16 px fit margins. Round instructions
+are in Help; ignored helper-file counts are in Folders. Start-screen cards wrap
+their text. Burst comparison uses a 2 px keeper border and image-corner number
+badges. See [before/after screenshots at 100% and 125%](docs/polish-1.5/README.md).
+
+The next two and previous one photos are decoded in background threads. This was
+already enabled in 1.4 and remains enabled in 1.5. A same-machine test on 300
+generated 24 MP JPEGs measured preloaded Next at **4.48 → 4.24 ms median** and
+**6.45 → 4.90 ms P95**, including QWidget painting. A cleared-cache read remains
+about 104 ms; arbitrary cold jumps are not covered by the sub-100 ms preload
+result. See [the navigation benchmark](docs/benchmark/navigation-1.5.md) for the
+method, Previous timings, sustained navigation and raw results.
 
 ## Import from a card
 
@@ -215,7 +228,7 @@ We especially want feedback on the **Keep vs Edit distinction**, navigation spee
 
 Include the version shown in H help, Windows version, display scaling, camera and approximate photo count. Do not post private photos, personal paths, settings files or complete shoot journals.
 
-**173 tests passed**, including reopening and undoing a journal from the previous Turkish release. The package and the app extracted from the ZIP are tested on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, high DPI/multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
+**250 tests passed**, including reopening and undoing a journal from the previous Turkish release. Windows DPI render checks cover 100%, 125% and 150%; the package is exercised on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
 
 [Five-minute beta guide](BETA.md) · [Validation and benchmark report (Turkish)](RAPOR.md) · [Run from source and build](docs/GELISTIRME.md)
 

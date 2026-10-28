@@ -51,8 +51,8 @@ def test_corrupt_error_card_decision_summary_and_undo(app, window, shoot, make_p
     assert not hasattr(window, "last_error")
     assert window.current.key == "corrupt" and window.current.raw is not None
     assert window.session.snapshot().total == 1 and len(window.filmstrip.items) == 1
-    assert "2 macOS helper files (._) ignored" in window.ignored_notice.text()
-    assert not window.ignored_notice.isHidden()
+    assert "2 macOS helper files (._) ignored" in window.ignored_action.text()
+    assert window.ignored_action.isVisible() and not window.ignored_action.isEnabled()
     assert window.keep_button.isEnabled() and window.reject_button.isEnabled()
     QTest.keyClick(window, Qt.Key.Key_Return if keep else Qt.Key.Key_X)
     wait(app, lambda: not window.busy and window.viewer.currentIndex() == 1)
@@ -76,7 +76,7 @@ def test_clean_folder_has_no_ignore_notice_or_error_list(app, window, shoot):
     Image.new("RGB", (24, 16), "gray").save(shoot / "GOOD.JPG")
     window.open_folder(shoot)
     wait(app, lambda: not window.busy and not window.canvas.image.isNull())
-    assert window.ignored_notice.isHidden() and not window.ignored_notice.text()
+    assert not window.ignored_action.isVisible() and not window.ignored_action.text()
     assert window.end_errors.isHidden() and not window.end_errors.toPlainText()
     window.decode_failures.add("good")
     window._image_loaded(str(window.current.jpeg), window.canvas.image, "")

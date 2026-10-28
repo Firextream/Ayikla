@@ -101,8 +101,8 @@ def test_round_labels_and_actions_distinguish_keep_from_lightroom_copy(app, wind
     window.open_folder(shoot)
     wait(app, lambda: not window.busy)
     assert "Keep" in window.keep_button.text() and "Delete" in window.reject_button.text()
-    assert "KEEP OR REJECT" in window.round_hint.text() and "01_secilen" in window.round_hint.text()
-    assert "_red" in window.round_hint.text() and "saved automatically" in window.round_hint.text()
+    assert window.counter.text().startswith("Round 1")
+    assert "01_secilen" in window.keep_button.toolTip() and "_red" in window.reject_button.toolTip()
     QTest.keyClick(window, Qt.Key.Key_H)
     assert all(text in window.canvas.help.text() for text in ("Delete", "no files deleted", "01_secilen", "02_edit"))
     QTest.keyClick(window, Qt.Key.Key_H)
@@ -111,13 +111,13 @@ def test_round_labels_and_actions_distinguish_keep_from_lightroom_copy(app, wind
     assert {name: (shoot / KEPT / name).read_bytes() for name in original} == original
     assert not (shoot / EDIT).exists()
     QTest.keyClick(window, Qt.Key.Key_M)
-    assert "LIGHTROOM" in window.round_hint.text() and "02_edit" in window.round_hint.text()
-    assert "Pick for editing" in window.mark_button.text()
+    assert window.counter.text().startswith("Round 2") and "02_edit" in window.mark_button.toolTip()
+    assert "Edit pick" in window.mark_button.text()
     QTest.keyClick(window, Qt.Key.Key_E)
     wait(app, lambda: not window.busy)
     assert {name: (shoot / EDIT / name).read_bytes() for name in original} == original
     assert {name: (shoot / KEPT / name).read_bytes() for name in original} == original
-    assert "Remove edit pick" in window.mark_button.text()
+    assert "Remove pick" in window.mark_button.text()
     before = (shoot / LOG).read_bytes()
     QTest.keyClick(window, Qt.Key.Key_Delete)
     app.processEvents()

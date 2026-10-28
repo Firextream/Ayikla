@@ -1,7 +1,8 @@
 """Keyboard-first burst viewer; decisions are always explicit."""
 
 from PySide6.QtCore import QPointF, Qt, QTimer, Signal
-from PySide6.QtWidgets import QDialog, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel, QPushButton, QVBoxLayout
+from .widgets import ElidedLabel
 
 from .images import ImageCache
 from .widgets import PhotoCanvas
@@ -22,16 +23,28 @@ class BurstCompare(QDialog):
         self.resize(1200, 800)
         self.setMinimumSize(800, 550)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(12)
         self.heading = QLabel()
         layout.addWidget(self.heading)
         grid = QGridLayout()
+        grid.setSpacing(12)
         layout.addLayout(grid, 1)
         self.panes, self.labels, self.caches, self.cells = [], [], [], []
         for index in range(self.page_size):
-            cell = QWidget()
+            cell = QFrame()
+            cell.setObjectName("compareCell")
             column = QVBoxLayout(cell)
-            name = QLabel()
+            column.setContentsMargins(12, 10, 12, 10)
+            column.setSpacing(6)
+            name = ElidedLabel()
+            name.setStyleSheet("font-size: 13px; padding: 0;")
             canvas = PhotoCanvas()
+            canvas.corner_label = QLabel(str(index + 1), canvas)
+            canvas.corner_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+            canvas.corner_label.setStyleSheet("background: #222222; color: #eeeeee; font-size: 12px;"
+                                              "border: 1px solid #777777; border-radius: 3px; padding: 2px 6px;")
+            canvas.corner_label.adjustSize()
             cache = ImageCache(self, byte_limit=96 * 1024 * 1024)
             cache.loaded.connect(lambda path, image, error, pane=canvas: self.loaded(pane, image, error))
             canvas.panned.connect(self.pan_all)
@@ -44,15 +57,20 @@ class BurstCompare(QDialog):
             self.caches.append(cache)
             self.cells.append(cell)
         controls = QHBoxLayout()
-        for text, callback in (("Previous page · ←", lambda: self.change_page(-1)),
-                               ("Next page · →", lambda: self.change_page(1)),
+        controls.setSpacing(12)
+        self.buttons = []
+        for text, callback in (("← Previous page", lambda: self.change_page(-1)),
+                               ("Next page →", lambda: self.change_page(1)),
                                ("100% / Fit · F", self.toggle_zoom),
-                               ("Keep selected, reject burst · Shift+Enter", self.confirm),
+                               ("Confirm · Shift+Enter", self.confirm),
                                ("Return · Esc", self.reject)):
             control = QPushButton(text)
             control.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            control.setFixedHeight(34)
             control.clicked.connect(callback)
-            controls.addWidget(control)
+            controls.addWidget(control, 1)
+            self.buttons.append(control)
+        self.buttons[3].setToolTip("Keep the selected frame and reject every other frame in this burst.")
         layout.addLayout(controls)
         self.timer = QTimer(self)
         self.timer.setSingleShot(True)
@@ -65,8 +83,9 @@ class BurstCompare(QDialog):
 
     def render_page(self):
         pages = (len(self.photos) + self.page_size - 1) // self.page_size
-        self.heading.setText(f"BURST · {len(self.photos)} frames · Page {self.page + 1}/{pages}"
-                             "   |   1–4 select keeper · F zoom · Drag pans all · Shift+Enter confirms")
+        self.heading.setWordWrap(True)
+        self.heading.setText(f"Burst · {len(self.photos)} frames · Page {self.page + 1}/{pages}"
+                             "   |   1–4 select · F zoom · Drag pans all · Shift+Enter keeps selected / rejects others")
         for i, (cell, name, canvas) in enumerate(zip(self.cells, self.labels, self.panes)):
             canvas.set_zoom(self.zoomed)
             position = self.page * self.page_size + i
@@ -74,8 +93,10 @@ class BurstCompare(QDialog):
             if position < len(self.photos):
                 photo = self.photos[position]
                 chosen = photo.key == self.selected
-                name.setText(f"{i + 1} · {photo.jpeg.name}" + ("  · SELECTED KEEPER" if chosen else ""))
-                name.setStyleSheet("color: #a9d5ad; font-weight: bold;" if chosen else "color: #bbbbbb;")
+                name.setText(photo.jpeg.name + ("  · Keeper" if chosen else ""))
+                cell.setProperty("selected", chosen)
+                cell.style().unpolish(cell)
+                cell.style().polish(cell)
         self.load_page()
 
     def load_page(self):
@@ -91,12 +112,14 @@ class BurstCompare(QDialog):
     @staticmethod
     def loaded(pane, image, error):
         pane.image, pane.message = image, error
+        pane.position_overlays()
         pane.update()
 
     def pan_all(self, point):
         for pane in self.panes:
             pane.pan = QPointF(point)
             pane._clamp_pan()
+            pane.position_overlays()
             pane.update()
 
     def toggle_zoom(self):

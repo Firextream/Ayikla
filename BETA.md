@@ -1,4 +1,4 @@
-# Ayikla 1.4.0b1 · Photo club beta
+# Ayikla 1.5.0b1 · Photo club beta
 
 Cull JPG/JPEG + RAW shoots or standalone JPEG/TIFF scans in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64. No Python installation required.
 
@@ -6,7 +6,7 @@ Cull JPG/JPEG + RAW shoots or standalone JPEG/TIFF scans in two rounds: choose w
 
 1. Extract the whole ZIP into a writable folder. Keep `Ayikla.exe` and `_internal` together; do not run from inside the ZIP.
 2. For your first test, use a **separate copy of 20–50 photo pairs** and keep an independent backup of your original shoot. The app moves files in the selected folder.
-3. Open `Ayikla.exe` → **Open folder**. Select the folder directly containing the JPEGs; nested folders are not scanned.
+3. Open `Ayikla.exe` → **Open**. Select the folder directly containing the JPEGs; nested folders are not scanned.
 
 This package is unsigned. If Windows prevents it from opening, report the warning text and version. Do not disable your security software.
 
@@ -34,7 +34,24 @@ Decisions are saved automatically. **Folders** opens your kept, rejected and edi
 
 Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Retry** to rescan after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
 
-## New in 1.4
+## Visual polish in 1.5
+
+Start-screen cards no longer clip their body text. Header controls use aligned
+menu arrows and consistent gaps. A single top-right progress line replaces the
+repeated counters; file information and photo actions share one bottom row.
+Round instructions are in Help and ignored-file counts are in Folders. The
+image has 16 px fit margins, with the burst badge on its corner. Burst compare
+adds an explicit keeper border and numbered image badges. Font sizes use
+12 / 13 / 15 / 20 px. Disabled text controls have at least 3:1 measured contrast.
+
+Keys, decisions, journals and file safety are unchanged. Background preloading
+of the next two / previous one photos was already present and is verified.
+On generated 24 MP JPEGs, preloaded Next median was 4.48 ms in 1.4 and 4.24 ms
+in 1.5 (P95 6.45 / 4.90 ms). These are same-machine key-to-widget-paint results,
+not a claim about every disk or monitor; cleared-cache reads are about 104 ms.
+See `docs/polish-1.5/README.md` and `docs/benchmark/navigation-1.5.md`.
+
+## Also included from 1.4
 
 - **Resume:** each shoot journal remembers the round, filename and capture time.
   Reopening resumes with a toast and **Start from first** action. If the saved
@@ -83,7 +100,7 @@ Keep two photos, reject one, then press Z. Close and reopen the shoot: do decisi
 
 Open a feedback or bug report at **https://github.com/Firextream/Ayikla/issues**. English and Turkish are welcome.
 
-- App version: **1.4.0b1**, also shown in H help.
+- App version: **1.5.0b1**, also shown in H help.
 - Windows version, display resolution and scaling (100%/125%/150%).
 - Camera, photo count and storage type (internal/external/SD card).
 - What did you do? What did you expect? What happened? Can you reproduce it?

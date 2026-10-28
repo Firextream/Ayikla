@@ -16,14 +16,14 @@ def test_estimate_hidden_until_ten_decisions_and_uses_median():
         pace.record()
         if i < 9:
             assert "min left" not in pace.line(snapshot(30, i + 1), "cull")
-    assert pace.line(snapshot(360, 9, 1), "cull") == "Round 1 · 10 / 370 decided · ~12 min left"
+    assert pace.line(snapshot(360, 9, 1), "cull") == "Round 1 · 10 / 370 · 9 kept · 1 rejected · ~12 min"
 
 
 def test_round_two_completion_and_new_session_do_not_show_false_estimates():
     pace = DecisionPace(lambda: 0)
     assert pace.line(snapshot(20, 5, 3), "edit", 2) == "Round 2 · 2 / 5 edit picks"
     pace.record(10)
-    assert pace.line(snapshot(0, 10), "cull") == "Round 1 · 10 / 10 decided"
+    assert pace.line(snapshot(0, 10), "cull") == "Round 1 · 10 / 10 · 10 kept · 0 rejected"
     assert "min left" not in DecisionPace().line(snapshot(10, 15), "cull")
 
 

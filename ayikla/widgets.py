@@ -40,7 +40,7 @@ class FadingOverlay(QLabel):
         self.setTextFormat(Qt.TextFormat.PlainText)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setStyleSheet("background: rgba(26,26,26,240); color: #dddddd; border: 1px solid #404040;"
-                           "border-radius: 8px; padding: 10px 14px; font-size: 12px;")
+                           "border-radius: 5px; padding: 6px 10px; font-size: 12px;")
         self.effect = QGraphicsOpacityEffect(self)
         self.setGraphicsEffect(self.effect)
         self.fade_to = fade_to
@@ -107,34 +107,47 @@ class PhotoCanvas(QWidget):
         self.pan = QPointF(min(x_limit, max(-x_limit, self.pan.x())),
                            min(y_limit, max(-y_limit, self.pan.y())))
 
+    def image_rect(self):
+        """The same display rectangle drives painting and image-corner overlays."""
+        if self.image.isNull():
+            return QRectF(self.rect().adjusted(16, 16, -16, -16))
+        if self.zoomed:
+            ratio = self.devicePixelRatioF()
+            width, height = self.image.width() / ratio, self.image.height() / ratio
+            return QRectF((self.width() - width) / 2 + self.pan.x(),
+                          (self.height() - height) / 2 + self.pan.y(), width, height)
+        area = self.rect().adjusted(16, 16, -16, -16)
+        size = self.image.size().scaled(area.size(), Qt.AspectRatioMode.KeepAspectRatio)
+        return QRectF(area.x() + (area.width() - size.width()) / 2,
+                      area.y() + (area.height() - size.height()) / 2, size.width(), size.height())
+
     def paintEvent(self, _event):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor("#1a1a1a"))
         if not self.image.isNull():
             if self.zoomed:
                 self._clamp_pan()
-                ratio = self.devicePixelRatioF()
-                width, height = self.image.width() / ratio, self.image.height() / ratio
-                target = QRectF((self.width() - width) / 2 + self.pan.x(),
-                                (self.height() - height) / 2 + self.pan.y(), width, height)
                 # 100% = one encoded photo pixel per physical display pixel.
                 painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, False)
             else:
-                area = self.rect().adjusted(8, 8, -8, -8)
-                size = self.image.size().scaled(area.size(), Qt.AspectRatioMode.KeepAspectRatio)
-                target = QRectF(area.center().x() - size.width() / 2,
-                                area.center().y() - size.height() / 2, size.width(), size.height())
                 painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
-            painter.drawImage(target, self.image)
+            painter.drawImage(self.image_rect(), self.image)
         else:
             painter.setPen(QColor("#aaaaaa"))
-            painter.setFont(QFont("Segoe UI", 18))
+            font = QFont("Segoe UI")
+            font.setPixelSize(20)
+            painter.setFont(font)
             painter.drawText(self.rect().adjusted(30, 30, -30, -30),
                              Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
 
     def position_overlays(self):
-        self.hud.move(18, 16)
-        self.info.move(18, 64)
+        visible = self.image_rect().intersected(QRectF(self.rect().adjusted(16, 16, -16, -16)))
+        x, y = round(visible.left()) + 10, round(visible.top()) + 10
+        self.hud.move(x, y)
+        self.info.move(min(x, max(16, self.width() - self.info.width() - 16)), y + 48)
+        if hasattr(self, "corner_label"):
+            self.corner_label.move(x, y)
+            self.corner_label.raise_()
         parent = self.help.parentWidget()
         self.help.move(max(12, (parent.width() - self.help.width()) // 2),
                        max(12, (parent.height() - self.help.height()) // 2))
@@ -157,6 +170,7 @@ class PhotoCanvas(QWidget):
             self.pan += event.position() - self._drag
             self._drag = event.position()
             self._clamp_pan()
+            self.position_overlays()
             self.panned.emit(self.pan)
             self.update()
         self.activity.emit()
@@ -232,7 +246,9 @@ class Filmstrip(QAbstractScrollArea):
                 size = image.size().scaled(self.thumbnail_size, Qt.AspectRatioMode.KeepAspectRatio)
                 painter.drawImage(QRectF(x + (card.width() - size.width()) / 2, 7, size.width(), size.height()), image)
             painter.setPen(QColor("#bbbbbb"))
-            painter.setFont(QFont("Segoe UI", 8))
+            font = QFont("Segoe UI")
+            font.setPixelSize(12)
+            painter.setFont(font)
             painter.drawText(card.adjusted(5, 73, -3, -2), Qt.AlignmentFlag.AlignCenter, photo.jpeg.name)
 
     def mousePressEvent(self, event):

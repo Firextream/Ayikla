@@ -70,7 +70,7 @@ class ColorBrowser(QDialog):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(24, 20, 24, 20)
         title = plain("Find a palette. Build a post.")
-        title.setStyleSheet("font-size: 24px; font-weight: 600;")
+        title.setStyleSheet("font-size: 20px; font-weight: 600;")
         layout.addWidget(title)
         layout.addWidget(plain("Explore your kept photos by color. Click a frame to return to it, then E to pick it for editing."))
         controls = QHBoxLayout()

@@ -1,7 +1,7 @@
 {
   "ok": true,
   "error": null,
-  "version": "1.4.0b1",
+  "version": "1.5.0b1",
   "checks": [
     "24 MP scaled JPEG, neutral gallery, RAW pairing and fullscreen startup",
     "100% zoom/pan/fit, EXIF, burst hint, filmstrip, keyboard help",
@@ -17,14 +17,15 @@
     "1.3 Pillow 16-bit TIFF display, XMP edit rating, palette handoff schema and round 2 refresh",
     "1.4 portable resume toast, start from first and median ETA after ten decisions",
     "1.4 recursive card import with SHA-256, remembered root, duplicate skip after culling and cooperative cancellation",
-    "1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo"
+    "1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo",
+    "1.5 wrapped start cards, single progress counter, two-row footer, image-anchored burst badge and keeper border/number badges"
   ],
-  "elapsed_seconds": 7.17,
-  "directory": ".tmp/frozen-verification/ba1bb268158f/smoke-913bb7124fa2",
+  "elapsed_seconds": 4.41,
+  "directory": ".tmp/frozen-verification/06907f29c2c5/smoke-4711a882cbce",
   "executable": "dist/Ayikla/Ayikla.exe",
-  "bytes": 2665853,
-  "package_bytes": 65858721,
-  "sha256": "9ef00bf20334ad08694631f488447e5c9f0a930cd61ca94a2c5c562f1bccc78d",
+  "bytes": 2668547,
+  "package_bytes": 65861415,
+  "sha256": "7061bfed84be513b5cef8c645178d672d4f1cff6d4121e1c4c3b4e755c4417f9",
   "exit_code": 0,
   "source_on_path": false,
   "qt_backend": "offscreen",

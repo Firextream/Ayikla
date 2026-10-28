@@ -128,7 +128,7 @@ def test_gallery_controls_and_help_fit_supported_window_sizes(app, window, shoot
     window.resize(*dimensions)
     open_photos(app, window, shoot)
     controls = (window.filename, window.raw_badge, window.current_folder_button,
-                window.zoom_button, window.info_button, window.strip_button)
+                window.info_button, window.strip_button, window.zoom_button)
     for first, second in zip(controls, controls[1:]):
         assert first.geometry().right() <= second.geometry().left()
     assert window.canvas.height() >= 300

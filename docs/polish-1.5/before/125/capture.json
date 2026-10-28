@@ -1,0 +1,67 @@
+{
+  "version": "1.4.0b1",
+  "backend": "windows",
+  "scale": 1.25,
+  "screens": {
+    "start": {
+      "logical": [
+        1152,
+        768
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.25,
+      "photo_height": 297
+    },
+    "round1": {
+      "logical": [
+        1152,
+        768
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.25,
+      "photo_height": 448
+    },
+    "burst": {
+      "logical": [
+        1200,
+        800
+      ],
+      "pixels": [
+        1500,
+        1000
+      ],
+      "dpr": 1.25,
+      "photo_height": 448
+    },
+    "round2": {
+      "logical": [
+        1152,
+        768
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.25,
+      "photo_height": 450
+    },
+    "summary": {
+      "logical": [
+        1152,
+        768
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.25,
+      "photo_height": 450
+    }
+  }
+}

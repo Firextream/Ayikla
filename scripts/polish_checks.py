@@ -1,0 +1,102 @@
+"""Geometry and contrast assertions used at native Windows DPI and in pytest."""
+
+from PySide6.QtCore import QRect
+from PySide6.QtGui import QPalette
+from PySide6.QtWidgets import QLabel
+
+
+def contrast(first, second):
+    def luminance(color):
+        channels = [color.redF(), color.greenF(), color.blueF()]
+        linear = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in channels]
+        return sum(v * weight for v, weight in zip(linear, (.2126, .7152, .0722)))
+    light, dark = sorted((luminance(first), luminance(second)), reverse=True)
+    return (light + .05) / (dark + .05)
+
+
+def check_header(window):
+    buttons = (window.folders_button, window.open_button, window.settings_button, window.full_button, window.help_button)
+    gaps = [second.x() - first.geometry().right() - 1 for first, second in zip(buttons, buttons[1:])]
+    assert gaps == [24] * 4, gaps
+    assert len({button.y() for button in buttons}) == 1
+    for button in buttons:
+        assert button.fontMetrics().horizontalAdvance(button.text()) <= button.width(), button.text()
+    return {"menu_gaps": gaps, "menu_baselines_aligned": True}
+
+
+def check_start(window):
+    sizes = []
+    for card in window.step_cards:
+        body = card.findChildren(QLabel)[-1]
+        # TextWordWrap = 0x1000; calculate the complete two-line body rectangle.
+        needed = body.fontMetrics().boundingRect(QRect(0, 0, body.contentsRect().width(), 10000), 0x1000, body.text())
+        assert body.height() >= needed.height(), (body.text(), body.size(), needed)
+        assert card.rect().contains(body.geometry()), body.text()
+        sizes.append({"card_height": card.height(), "body_height": body.height(), "needed": needed.height()})
+    return {**check_header(window), "cards": sizes}
+
+
+def check_gallery(window):
+    assert window.photo_info.parentWidget() is window.controls
+    assert window.controls.height() <= 54
+    ordered = [window.filename, window.raw_badge]
+    if window.edit_badge.isVisible():
+        ordered.append(window.edit_badge)
+    ordered += [window.current_folder_button, window.info_button, window.strip_button, window.zoom_button]
+    for first, second in zip(ordered, ordered[1:]):
+        assert first.geometry().right() < second.geometry().left(), (first.text(), second.text())
+    assert window.photo_info.geometry().right() < window.previous_button.geometry().left()
+    assert window.counter.fontMetrics().horizontalAdvance(window.counter.text()) <= window.counter.width(), window.counter.text()
+    progress_labels = [item for item in window.findChildren(QLabel)
+                       if item.isVisible() and item.text().startswith(("Round 1 ·", "Round 2 ·"))]
+    assert progress_labels == [window.counter], [item.text() for item in progress_labels]
+    image = window.canvas.image_rect()
+    assert image.left() >= 15.5 and image.top() >= 15.5
+    assert image.right() <= window.canvas.width() - 15.5
+    assert image.bottom() <= window.canvas.height() - 15.5
+    assert abs(image.center().x() - window.canvas.width() / 2) <= 1
+    assert abs(image.center().y() - window.canvas.height() / 2) <= 1
+    if window.canvas.hud.isVisible():
+        assert image.contains(window.canvas.hud.geometry().topLeft())
+    ratios = []
+    for button in (window.undo_button, window.previous_button, window.keep_button):
+        enabled = button.isEnabled()
+        button.setEnabled(False)
+        palette = button.palette()
+        fg = palette.color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText)
+        bg = palette.color(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Button)
+        if bg.alpha() == 0:
+            bg = window.palette().color(QPalette.ColorRole.Window)
+        value = contrast(fg, bg)
+        button.setEnabled(enabled)
+        assert value >= 3, (button.text(), fg.name(), bg.name(), value)
+        ratios.append(round(value, 2))
+    return {**check_header(window), "control_row_height": window.controls.height(),
+            "single_counter": True, "disabled_contrast": ratios, "photo_height": window.canvas.height()}
+
+
+def check_compare(dialog):
+    assert len({button.height() for button in dialog.buttons}) == 1
+    for first, second in zip(dialog.buttons, dialog.buttons[1:]):
+        assert second.x() - first.geometry().right() - 1 == 12
+    for button in dialog.buttons:
+        assert button.fontMetrics().horizontalAdvance(button.text()) <= button.width() - 12, button.text()
+    for index, (cell, pane, label) in enumerate(zip(dialog.cells, dialog.panes, dialog.labels)):
+        if not cell.isVisible():
+            continue
+        assert label.font().pixelSize() == 13
+        assert pane.image_rect().contains(pane.corner_label.geometry().topLeft())
+        assert pane.corner_label.text() == str(index + 1)
+        assert cell.frameWidth() == 2
+    assert sum(bool(cell.property("selected")) for cell in dialog.cells) == 1
+    return {"selection_border": 2, "number_badges_on_images": True,
+            "button_height": dialog.buttons[0].height(), "button_gaps": 12}
+
+
+def check_summary(window):
+    assert window.controls.isHidden() and window.photo_info.isHidden()
+    assert window.end_card.width() <= 620
+    for label in window.end_card.findChildren(QLabel):
+        if label.isVisible():
+            assert label.fontMetrics().horizontalAdvance(label.text().split("\n")[0]) <= label.width()
+    return {**check_header(window), "photo_controls_hidden": True, "summary_width": window.end_card.width()}
