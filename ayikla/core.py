@@ -324,7 +324,7 @@ class ShootSession:
         if kind == "begin":
             if self.pending_id or record["id"] in self.transactions:
                 raise RecoveryError("Journal contains conflicting operations.")
-            if record["action"] not in {"keep", "reject", "edit_mark", "edit_unmark", "undo"}:
+            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo"}:
                 raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
                 if operation["kind"] not in {"move", "copy"}:
@@ -379,6 +379,15 @@ class ShootSession:
         self.pending_id = None
         if self._photos is not None:
             effective = self.transactions[tx["undo_of"]]["action"] if action == "undo" else action
+            if effective == "burst":
+                group = self.transactions[tx["undo_of"]] if action == "undo" else tx
+                for member in group["members"]:
+                    state = member["before"] if action == "undo" else member["after"]
+                    folder = self.root / {"pending": "", "kept": KEPT, "rejected": REJECTED}[state]
+                    old = self._photos[member["key"]]
+                    self._photos[old.key] = Photo(old.key, folder / old.jpeg.name,
+                                                 folder / old.raw.name if old.raw else None, state)
+                self._snapshot = None
             if effective in {"keep", "reject"}:
                 state = "pending" if action == "undo" else ("kept" if action == "keep" else "rejected")
                 paths = [self._path(op["dst"]) for op in tx["ops"]]
@@ -550,11 +559,24 @@ class ShootSession:
             self.rescan()
 
     @rescan_on_conflict
-    def decide(self, photo: Photo, keep: bool, next_key: str | None = None) -> None:
+    def decide_burst(self, photos: tuple[Photo, ...], selected: str) -> None:
+        """One durable decision, including the previous state of every member."""
         self._ensure_ready()
-        current = self._photos.get(photo.key)
-        if current is None or current != photo or current.state != "pending":
-            raise ConflictError("This photo is no longer in the shoot root. Reopen the folder.")
+        if len(photos) < 2 or len({p.key for p in photos}) != len(photos) or selected not in {p.key for p in photos}:
+            raise ConflictError("Choose one frame from this burst.")
+        operations, members = [], []
+        for photo in photos:
+            if self._photos.get(photo.key) != photo or photo.key in self.edits:
+                raise ConflictError("Burst changed or contains edit picks. Refresh or remove edit picks first.")
+            self._check_raw_partner(photo)
+            state = "kept" if photo.key == selected else "rejected"
+            members.append({"key": photo.key, "before": photo.state, "after": state})
+            target = self.root / (KEPT if state == "kept" else REJECTED)
+            if photo.state != state:
+                operations.extend(self._move_op(path, target / path.name) for path in photo.files)
+        self._transaction("burst", selected, operations, {"mode": "edit", "key": selected}, members=members)
+
+    def _check_raw_partner(self, photo: Photo) -> None:
         for extension in RAW_EXTENSIONS:
             candidate = photo.jpeg.with_suffix(extension.upper())
             if photo.raw and candidate.name.casefold() == photo.raw.name.casefold():
@@ -562,6 +584,14 @@ class ShootSession:
             if candidate.is_file() and not ignored_file_reason(candidate):
                 raise ConflictError(f"A new {extension[1:].upper()} RAW partner was found. "
                                     "Press Retry to rescan, then make the decision again.")
+
+    @rescan_on_conflict
+    def decide(self, photo: Photo, keep: bool, next_key: str | None = None) -> None:
+        self._ensure_ready()
+        current = self._photos.get(photo.key)
+        if current is None or current != photo or current.state != "pending":
+            raise ConflictError("This photo is no longer in the shoot root. Reopen the folder.")
+        self._check_raw_partner(photo)
         target = self.root / (KEPT if keep else REJECTED)
         operations = [self._move_op(path, target / path.name) for path in photo.files]
         self._transaction("keep" if keep else "reject", photo.key, operations,

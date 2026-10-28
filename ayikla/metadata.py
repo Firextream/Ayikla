@@ -68,6 +68,11 @@ def _read_metadata(path: str | Path) -> CaptureInfo:
 
 
 def burst_hints(items: dict[str, CaptureInfo]) -> dict[str, tuple[int, int]]:
+    return {key: (index, len(group)) for group in burst_groups(items)
+            for index, key in enumerate(group, 1)}
+
+
+def burst_groups(items: dict[str, CaptureInfo]) -> list[tuple[str, ...]]:
     """Consecutive capture times at most one second apart, across all states."""
     ordered = sorted(((key, info) for key, info in items.items() if info.taken is not None),
                      key=lambda item: (item[1].taken, natural_key(item[1].filename)))
@@ -78,5 +83,4 @@ def burst_hints(items: dict[str, CaptureInfo]) -> dict[str, tuple[int, int]]:
             groups.append([])
         groups[-1].append(key)
         previous = info.taken
-    return {key: (index, len(group)) for group in groups if len(group) > 1
-            for index, key in enumerate(group, 1)}
+    return [tuple(group) for group in groups if len(group) > 1]

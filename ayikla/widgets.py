@@ -77,6 +77,7 @@ class FadingOverlay(QLabel):
 class PhotoCanvas(QWidget):
     resized = Signal()
     activity = Signal()
+    panned = Signal(object)
 
     def __init__(self):
         super().__init__()
@@ -156,6 +157,7 @@ class PhotoCanvas(QWidget):
             self.pan += event.position() - self._drag
             self._drag = event.position()
             self._clamp_pan()
+            self.panned.emit(self.pan)
             self.update()
         self.activity.emit()
 

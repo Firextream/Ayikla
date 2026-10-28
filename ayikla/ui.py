@@ -15,7 +15,8 @@ from . import __version__
 from .core import EDIT, KEPT, REJECTED, AyiklaError, Photo, ShootSession
 from .images import ImageCache
 from .color_browser import ColorBrowser
-from .metadata import burst_hints, read_metadata
+from .metadata import burst_groups, burst_hints, read_metadata
+from .compare import BurstCompare
 from .preferences import Preferences
 from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
 
@@ -136,6 +137,7 @@ class MainWindow(QMainWindow):
         self.decode_failures: set[str] = set()
         self.color_profiles = {}
         self.color_browser = None
+        self.compare = None
         self.metadata = {}
         self.bursts = {}
         self._metadata_task = None
@@ -499,6 +501,11 @@ class MainWindow(QMainWindow):
     def _operation_finished(self, _result, error):
         self.busy = False
         self._task = None
+        if self.compare:
+            self.compare.setEnabled(True)
+            if not error:
+                self.compare.saved = True
+                self.compare.heading.setText("Burst saved · Esc returns to the kept frame · Z in single view undoes the group")
         if error:
             self._show_error(error)
             return
@@ -763,6 +770,37 @@ class MainWindow(QMainWindow):
         self._request_image()
         self._update_overlays()
 
+    def open_compare(self):
+        if not self.current or self.busy or not self.session:
+            return
+        group = next((g for g in burst_groups(self.metadata) if self.current.key in g), None)
+        if not group:
+            self.notify("This photo is not part of a detected burst.")
+            return
+        catalog = {p.key: p for p in self.session.all_photos()}
+        photos = tuple(catalog[key] for key in group if key in catalog)
+        if len(photos) < 2:
+            return
+        self.compare = BurstCompare(photos, self.current.key, self)
+        self.compare.setModal(True)
+        self.compare.committed.connect(self._confirm_burst)
+        self.compare.finished.connect(self._compare_closed)
+        self.compare.open()
+
+    def _confirm_burst(self, photos, selected):
+        dialog = self.compare
+        def operation():
+            self.session.decide_burst(photos, selected)
+            return selected
+        dialog.setEnabled(False)
+        self._run(operation, "Saving burst decision…", "Burst decision saved · Z undoes the whole group")
+
+    def _compare_closed(self, _result):
+        dialog = self.compare
+        if dialog and dialog.saved:
+            self.jump_to(dialog.selected)
+        self.compare = None
+
     def toggle_info(self):
         if not self.current:
             return
@@ -787,6 +825,7 @@ class MainWindow(QMainWindow):
                                     "Decisions are saved automatically.\n"
                                     "Space / ↓   Next     ↑   Previous\nZ   Undo     M   Switch round\n"
                                     "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip     C   Color ideas (round 2)\n"
+                                    "B   Burst compare · 1–4 select · Shift+Enter keep selected / reject others\n"
                                     "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder",
                                     auto_fade=False)
             self.canvas.position_overlays()
@@ -926,6 +965,8 @@ class MainWindow(QMainWindow):
             self.toggle_info()
         elif key == Qt.Key.Key_C:
             self.open_colors()
+        elif key == Qt.Key.Key_B:
+            self.open_compare()
         elif key == Qt.Key.Key_T:
             self.toggle_filmstrip()
         elif key in (Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Space):
