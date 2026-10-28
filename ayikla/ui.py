@@ -598,7 +598,8 @@ class MainWindow(QMainWindow):
             self.canvas.image = QImage()
             if photo:
                 self.filename.setText(photo.jpeg.name)
-                self.raw_badge.setText(f"JPG + {photo.raw.suffix[1:].upper()}" if photo.raw else "⚠ No matching RAW")
+                self.raw_badge.setText(f"{photo.jpeg.suffix[1:].upper()} + {photo.raw.suffix[1:].upper()}" if photo.raw
+                                       else f"{photo.jpeg.suffix[1:].upper()} · Film / scan · No matching RAW")
                 self.raw_badge.setStyleSheet("" if photo.raw else "color: #cccccc; background: #303030;")
                 self.raw_badge.show()
                 self.edit_badge.setVisible(photo.key in self.session.edits)
@@ -619,7 +620,7 @@ class MainWindow(QMainWindow):
                 self.edit_badge.hide()
                 if self.mode == "cull":
                     self.canvas.message = ("Culling complete.\nPress M to choose photos for editing."
-                                           if snapshot.total else "No JPG/JPEG photos found in this folder.")
+                                           if snapshot.total else "No JPG/JPEG or TIFF photos found in this folder.")
                 else:
                     self.canvas.message = "No kept photos yet.\nPress Right or Enter in round 1 to keep photos."
                 self.session.save_view(self.mode, None)
@@ -658,7 +659,8 @@ class MainWindow(QMainWindow):
                 self.decode_failures.add(self.current.key)
             else:
                 self.decode_failures.discard(self.current.key)
-            self.canvas.message = (f"Could not open JPEG.\n{self.current.jpeg.name}\n{error}\n"
+            kind = "TIFF" if self.current.jpeg.suffix.casefold() in {".tif", ".tiff"} else "JPEG"
+            self.canvas.message = (f"Could not open {kind}.\n{self.current.jpeg.name}\n{error}\n"
                                    "Press Enter to keep or Delete / X to reject this file.") if error else ""
             self._update_decode_summary()
             self.canvas.update()
@@ -666,7 +668,7 @@ class MainWindow(QMainWindow):
     def _update_decode_summary(self):
         paths = [photo.jpeg.relative_to(self.session.root).as_posix()
                  for photo in self.session.all_photos() if photo.key in self.decode_failures]
-        self.end_errors.setPlainText("JPEGs that could not be opened in this session "
+        self.end_errors.setPlainText("Photos that could not be opened in this session "
                                      f"({len(paths)}):\n" + "\n".join(paths) if paths else "")
         self.end_errors.setVisible(bool(paths))
 

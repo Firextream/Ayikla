@@ -153,7 +153,7 @@ def test_empty_folder_and_finished_round(app, shoot):
         window.open_folder(shoot)
         wait_until(app, lambda: not window.busy)
         assert window.current is None
-        assert "No JPG/JPEG photos found" in window.canvas.message
+        assert "No JPG/JPEG or TIFF photos found" in window.canvas.message
         assert not window.keep_button.isEnabled()
         make_jpeg(shoot, "IMG_1")
         window.refresh()

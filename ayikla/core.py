@@ -29,6 +29,7 @@ REJECTED = "_red"
 ARCHIVE = ".ayikla_saklanan"
 LOG = "ayikla_log.jsonl"
 VERSION = 1
+PREVIEW_EXTENSIONS = frozenset({".jpg", ".jpeg", ".tif", ".tiff"})
 RAW_EXTENSIONS = frozenset({".cr3", ".cr2", ".crw", ".raf", ".arw", ".srf", ".sr2",
                             ".orf", ".nef", ".nrw", ".rw2", ".rwl", ".pef", ".dng", ".srw"})
 
@@ -92,7 +93,7 @@ def ignored_file_reason(path: Path) -> str | None:
 
 def pair_photos(folder: Path, state: str = "pending", *,
                 ignored: dict[str, int] | None = None) -> tuple[Photo, ...]:
-    """Pair immediate JPEG/RAW children by case-insensitive stem, never recurse."""
+    """Pair JPEG/RAW or accept standalone JPEG/TIFF; never recurse."""
     if not folder.exists():
         return ()
     if is_link(folder) or not folder.is_dir():
@@ -105,7 +106,7 @@ def pair_photos(folder: Path, state: str = "pending", *,
                 ignored[reason] = ignored.get(reason, 0) + 1
             continue
         extension = path.suffix.casefold()
-        if extension not in RAW_EXTENSIONS | {".jpg", ".jpeg"}:
+        if extension not in RAW_EXTENSIONS | PREVIEW_EXTENSIONS:
             continue
         if is_link(path):
             raise ConflictError(f"Linked photos cannot be processed: {path.name}")
@@ -403,7 +404,7 @@ class ShootSession:
             if effective in {"keep", "reject"}:
                 state = "pending" if action == "undo" else ("kept" if action == "keep" else "rejected")
                 paths = [self._path(op["dst"]) for op in tx["ops"]]
-                jpeg = next(path for path in paths if path.suffix.casefold() in {".jpg", ".jpeg"})
+                jpeg = next(path for path in paths if path.suffix.casefold() in PREVIEW_EXTENSIONS)
                 raw = next((path for path in paths if path.suffix.casefold() in RAW_EXTENSIONS), None)
                 self._photos[key] = Photo(key, jpeg, raw, state)
                 self._snapshot = None

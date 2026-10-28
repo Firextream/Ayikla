@@ -1,10 +1,11 @@
-"""Byte-bounded asynchronous scaled JPEG decoding, including EXIF orientation."""
+"""Byte-bounded asynchronous JPEG/TIFF previews, including EXIF orientation."""
 
 from collections import OrderedDict
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QRunnable, QSize, Qt, QThreadPool, Signal
-from PySide6.QtGui import QImage, QImageReader
+from PySide6.QtGui import QColorSpace, QImage, QImageReader
+from PIL import Image, ImageOps
 
 from .file_access import file_guard
 
@@ -17,6 +18,8 @@ def read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple[
 
 
 def _read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple[QImage, str]:
+    if Path(path).suffix.casefold() in {".tif", ".tiff"}:
+        return _read_tiff(path, bounds, full_resolution)
     reader = QImageReader(str(path))
     reader.setAutoTransform(True)
     size = reader.size()
@@ -31,6 +34,31 @@ def _read_image(path: str | Path, bounds: QSize, full_resolution=False) -> tuple
         reader.setQuality(49)
     image = reader.read()
     return image, reader.errorString() if image.isNull() else ""
+
+
+def _read_tiff(path, bounds, full_resolution):
+    try:
+        with Image.open(path, formats=["TIFF"]) as image:
+            profile = image.info.get("icc_profile")
+            # Pillow/libtiff handles RGB 16-bit channels; grayscale needs an
+            # explicit range conversion (convert('L') alone clips at 255).
+            if image.mode.startswith("I;16") or (image.mode == "I" and image.tag_v2.get(258) == (16,)):
+                image = image.convert("I").point(lambda value: value / 256).convert("L")
+            if not full_resolution:
+                target = bounds.boundedTo(QSize(3200, 3200))
+                width, height = max(1, target.width()), max(1, target.height())
+                # Use Pillow's reduce/thumbnail path before constructing Qt
+                # pixels. TIFF codecs may still need to decode the source.
+                image.thumbnail((width, height), Image.Resampling.LANCZOS, reducing_gap=3.0)
+            image = ImageOps.exif_transpose(image)
+            rgb = image.convert("RGB")
+            pixels = rgb.tobytes()
+            result = QImage(pixels, rgb.width, rgb.height, rgb.width * 3, QImage.Format.Format_RGB888).copy()
+            if profile:
+                result.setColorSpace(QColorSpace.fromIccProfile(profile))
+            return result, ""
+    except (OSError, ValueError, SyntaxError, OverflowError) as error:
+        return QImage(), str(error)
 
 
 class LoadSignals(QObject):

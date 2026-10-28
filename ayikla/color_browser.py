@@ -87,7 +87,7 @@ class ColorBrowser(QDialog):
         controls.addWidget(self.strength)
         layout.addLayout(controls)
         name = self.photos[reference].jpeg.name if reference in self.photos else "none"
-        self.status = plain("Analyzing kept JPEGs…")
+        self.status = plain("Analyzing kept photos…")
         self.reference_label = plain(f"Reference: {name}")
         layout.addWidget(self.reference_label)
         layout.addWidget(self.status)
@@ -98,7 +98,7 @@ class ColorBrowser(QDialog):
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop)
         scroll.setWidget(body)
         layout.addWidget(scroll, 1)
-        layout.addWidget(plain("Top 24 matches · JPEG colors, not quality scores. Camera profiles and lighting affect the result. No files are changed."))
+        layout.addWidget(plain("Top 24 matches · Preview colors, not quality scores. Camera profiles and lighting affect the result. No files are changed."))
         close = QPushButton("Back to photos")
         close.clicked.connect(self.reject)
         layout.addWidget(close)

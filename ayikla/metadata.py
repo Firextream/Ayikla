@@ -1,4 +1,4 @@
-"""JPEG-header-only EXIF reads. Never calls Image.load or decodes photo pixels."""
+"""JPEG/TIFF header-only EXIF reads; never decode photo pixels."""
 
 from dataclasses import dataclass
 from datetime import datetime
@@ -35,7 +35,7 @@ def read_metadata(path: str | Path) -> CaptureInfo:
 def _read_metadata(path: str | Path) -> CaptureInfo:
     path = Path(path)
     try:
-        with Image.open(path, formats=["JPEG"]) as image:
+        with Image.open(path, formats=["JPEG", "TIFF"]) as image:
             top = image.getexif()
             values = dict(top)
             values.update(top.get_ifd(34665))

@@ -1,4 +1,4 @@
-"""Small, read-only JPEG palette descriptors. No RAW decoding or quality scoring."""
+"""Small, read-only preview palette descriptors. No RAW decoding or quality scoring."""
 
 from collections import Counter
 from dataclasses import dataclass
@@ -23,7 +23,7 @@ class Palette:
 
 def describe(image: QImage) -> Palette:
     if image.isNull():
-        raise ValueError("Could not read JPEG pixels.")
+        raise ValueError("Could not read image pixels.")
     if image.colorSpace().isValid():
         converted = image.convertedToColorSpace(QColorSpace(QColorSpace.NamedColorSpace.SRgb))
         if not converted.isNull():
@@ -64,7 +64,7 @@ def describe(image: QImage) -> Palette:
 def analyze(path: Path) -> Palette:
     image, error = read_image(path, QSize(128, 128))
     if image.isNull():
-        raise ValueError(error or "Could not open JPEG.")
+        raise ValueError(error or "Could not open image.")
     return describe(image)
 
 
