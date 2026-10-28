@@ -19,6 +19,7 @@ from .metadata import burst_groups, burst_hints, read_metadata
 from .compare import BurstCompare
 from .preferences import Preferences
 from .progress import DecisionPace
+from .import_dialog import ImportDialog
 from .widgets import ElidedLabel, FadingOverlay, Filmstrip, PhotoCanvas
 
 STYLE = """
@@ -141,6 +142,7 @@ class MainWindow(QMainWindow):
         self.color_profiles = {}
         self.color_browser = None
         self.compare = None
+        self.import_dialog = None
         self.metadata = {}
         self.bursts = {}
         self._metadata_task = None
@@ -205,6 +207,9 @@ class MainWindow(QMainWindow):
         self.xmp_action.setCheckable(True)
         self.xmp_action.setChecked(self.preferences.write_xmp)
         self.xmp_action.triggered.connect(self._set_xmp)
+        settings_menu.addSeparator()
+        self.import_action = settings_menu.addAction("Import from card… · Ctrl+I")
+        self.import_action.triggered.connect(self.choose_import)
         self.settings_button.setMenu(settings_menu)
         header.addWidget(self.settings_button)
         self.full_button = button("Full screen", self.toggle_fullscreen, "ghost")
@@ -487,6 +492,33 @@ class MainWindow(QMainWindow):
         except OSError as error:
             self.xmp_action.setChecked(self.preferences.write_xmp)
             self._show_error(error)
+
+    def choose_import(self):
+        if self.busy or (self.session and (self.session.pending_id or self.session.faulted)):
+            return
+        if self.import_dialog and self.import_dialog.isVisible():
+            self.import_dialog.raise_()
+            return
+        self.import_dialog = ImportDialog(self.preferences.import_destination, self.session, self)
+        self.import_dialog.completed.connect(self._import_completed)
+        self.import_dialog.finished.connect(self._import_closed)
+        self.import_dialog.open()
+
+    def _import_closed(self, _result):
+        if self.session and not self.busy:
+            self.refresh(self.current.key if self.current else None, rescan=False)
+
+    def _import_completed(self, result):
+        try:
+            self.preferences.set_import_destination(result.folder.parent)
+        except OSError as error:
+            self.feedback.setText(f"Import completed, but destination preference could not be saved: {error}")
+        def open_result():
+            if result.folder.is_dir():
+                self.open_folder(result.folder)
+            self.feedback.setText(f"{'Import cancelled' if result.cancelled else 'Import complete'} · "
+                                  f"{result.copied} verified copies · {result.skipped} skipped")
+        QTimer.singleShot(0, open_result)
 
     def _run(self, operation, message: str, success: str, opening=False, decision_count=0):
         if self.busy:
@@ -887,7 +919,7 @@ class MainWindow(QMainWindow):
                                     "Space / ↓   Next     ↑   Previous\nZ   Undo     M   Switch round\n"
                                     "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip     C   Color ideas (round 2)\n"
                                     "B   Burst compare · 1–4 select · Shift+Enter keep selected / reject others\n"
-                                    "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder",
+                                    "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder     Ctrl+I   Import from card",
                                     auto_fade=False)
             self.canvas.position_overlays()
 
@@ -1015,6 +1047,8 @@ class MainWindow(QMainWindow):
             self.toggle_help()
         elif key == Qt.Key.Key_O and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.choose_folder()
+        elif key == Qt.Key.Key_I and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.choose_import()
         elif self.busy or event.isAutoRepeat() or not self.session or self.session.pending_id or self.session.faulted:
             return
         elif key == Qt.Key.Key_M:

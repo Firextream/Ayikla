@@ -206,6 +206,9 @@ class ShootSession:
             if self.pending_id:
                 self.recover_pending()
             self.rescan()  # One filesystem scan on open, after journal recovery.
+            if (self.root / "ayikla_import.jsonl").exists():
+                from .importer import ImportJournal, _recover_stages
+                _recover_stages(ImportJournal(self))
             self.resume_position = self.resolve_resume()
         except Exception:
             self.close()
@@ -334,14 +337,14 @@ class ShootSession:
         if kind == "begin":
             if self.pending_id or record["id"] in self.transactions:
                 raise RecoveryError("Journal contains conflicting operations.")
-            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo", "picks_refresh"}:
+            if record["action"] not in {"keep", "reject", "burst", "edit_mark", "edit_unmark", "undo", "picks_refresh", "import"}:
                 raise RecoveryError("Journal contains an unknown decision.")
             for operation in record["ops"]:
-                if operation["kind"] not in {"move", "copy", "write"}:
+                if operation["kind"] not in {"move", "copy", "write", "imported"}:
                     raise RecoveryError("Journal contains an unknown file operation.")
-                if operation["kind"] != "write":
+                if operation["kind"] not in {"write", "imported"}:
                     self._path(operation["src"])
-                else:
+                elif operation["kind"] == "write":
                     base64.b64decode(operation["content"], validate=True)
                 self._path(operation["dst"])
                 if operation["kind"] in {"copy", "write"}:
@@ -406,6 +409,8 @@ class ShootSession:
         self.pending_id = None
         if self._photos is not None:
             effective = self.transactions[tx["undo_of"]]["action"] if action == "undo" else action
+            if effective == "import":
+                self.rescan()
             if effective == "burst":
                 group = self.transactions[tx["undo_of"]] if action == "undo" else tx
                 for member in group["members"]:
@@ -530,6 +535,10 @@ class ShootSession:
         virtual: dict[str, dict | None] = {}
         for op in operations:
             target = self._path(op["dst"])
+            if op["kind"] == "imported":
+                if not same_file(target, op["fingerprint"]):
+                    raise ConflictError(f"Imported file changed: {target.name}")
+                continue
             if op["kind"] != "write":
                 source = self._path(op["src"])
                 src_key = op["src"].casefold()
@@ -622,6 +631,11 @@ class ShootSession:
                 continue
             if operation["kind"] == "move":
                 self._finish_move(operation)
+            elif operation["kind"] == "imported":
+                from .importer import sha256_file
+                target = self._path(operation["dst"])
+                if not same_file(target, operation["fingerprint"]) or sha256_file(target) != operation["sha256"]:
+                    raise RecoveryError(f"Imported file could not be verified: {target.name}")
             elif operation["kind"] == "write":
                 self._finish_write(transaction_id, index, operation)
             else:
@@ -632,7 +646,7 @@ class ShootSession:
         for index, operation in enumerate(self.transactions[transaction_id]["ops"]):
             if operation["kind"] == "move":
                 outputs.pop(operation["src"].casefold(), None)
-            expected = (operation["fingerprint"] if operation["kind"] == "move"
+            expected = (operation["fingerprint"] if operation["kind"] in {"move", "imported"}
                         else self.receipts[transaction_id][index])
             outputs[operation["dst"].casefold()] = (operation["dst"], expected)
         for relative, expected in outputs.values():
@@ -669,6 +683,13 @@ class ShootSession:
         token = hashlib.sha256(relative.encode()).hexdigest()[:16]
         return {"kind": "write", "dst": relative, "content": base64.b64encode(content).decode("ascii"),
                 "stage": f"{ARCHIVE}/islem/{transaction_id}/{token}.part"}
+
+    def register_import(self, import_id: str, files: list[dict]) -> None:
+        if not files or any(tx.get("import_id") == import_id for tx in self.transactions.values()):
+            return
+        operations = [{"kind": "imported", "dst": item["dst"], "fingerprint": item["fingerprint"],
+                       "sha256": item["sha256"]} for item in files]
+        self._transaction("import", "", operations, dict(self.view), import_id=import_id)
 
     def _xmp_ops(self, photo: Photo, target: Path, rating: int, transaction_id: str, *, copy=False) -> list[dict]:
         if not self.write_xmp:
@@ -834,6 +855,6 @@ class ShootSession:
             else:
                 token = hashlib.sha256(op["dst"].encode()).hexdigest()[:16]
                 destination = self._path(f"{ARCHIVE}/geri_alinan/{transaction_id}/{token}/{source.name}")
-                expected = self.receipts[target_id][index]
+                expected = op["fingerprint"] if op["kind"] == "imported" else self.receipts[target_id][index]
             operations.append(self._move_op(source, destination, expected))
         return operations

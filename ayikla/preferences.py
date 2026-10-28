@@ -14,6 +14,7 @@ class Preferences:
         self.recent: list[str] = []
         self.window: dict = {}
         self.write_xmp = True
+        self.import_destination = ""
         self.read_error = False
         try:
             data = self.path.read_bytes()
@@ -46,6 +47,11 @@ class Preferences:
                                "maximized": bool(record.get("maximized"))}
         elif record.get("type") == "xmp" and isinstance(record.get("enabled"), bool):
             self.write_xmp = record["enabled"]
+        elif record.get("type") == "import_destination" and isinstance(record.get("path"), str):
+            self.import_destination = record["path"]
+
+    def set_import_destination(self, path):
+        self._append({"type": "import_destination", "path": str(Path(path).resolve())})
 
     def set_xmp(self, enabled: bool):
         self._append({"type": "xmp", "enabled": bool(enabled)})
