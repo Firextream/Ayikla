@@ -158,7 +158,7 @@ Malformed or unsupported XMP blocks the decision with an error instead of losing
 
 Import the edit folder manually, or use Lightroom's **Metadata → Read Metadata
 from Files** for already imported photos. Lightroom Classic 13.2 introduced XMP
-flag support ([Adobe documentation](https://helpx-origin.aws116.adobeitc.com/ie/lightroom-classic/help/flag-label-rate-photos.html)).
+flag support ([Adobe documentation](https://helpx.adobe.com/lightroom-classic/help/flag-label-rate-photos.html)).
 JPEG/TIFF sidecar handling can vary between editors; test the handoff in your
 Lightroom version. Ayikla never embeds metadata into JPEG, TIFF or DNG files.
 
