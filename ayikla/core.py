@@ -698,7 +698,9 @@ class ShootSession:
         photos = [Photo(p.key, self._path(f"{EDIT}/{p.jpeg.name}"), None, "edit")
                   for p in self.all_photos() if p.key in self.edits]
         date_text = (today or date.today()).isoformat()
-        jpeg, pdf = encode(render(photos, date_text), include_pdf)
+        title, shoot_date = self.sheet_title(photos, date_text)
+        sheet, grid = render(photos, title, shoot_date)
+        jpeg, pdf = encode(sheet, include_pdf, grid)
         stem, suffix = f"contact_sheet_{date_text}", 1
         while True:
             basename = stem if suffix == 1 else f"{stem}_{suffix}"
@@ -712,6 +714,17 @@ class ShootSession:
         operations = [self._write_op(path, content, identity) for path, content in outputs]
         self._transaction("contact_sheet", "", operations, dict(self.view), identity)
         return {"contact_sheet": [self._relative(path) for path, _content in outputs]}
+
+    def sheet_title(self, photos, fallback_date: str) -> tuple[str, str]:
+        """Contact sheet heading: the shoot name without an import date prefix, and the shoot's
+        date — from the folder name, else the earliest capture time, else the export date."""
+        import re
+        from .metadata import read_metadata
+        match = re.fullmatch(r"(\d{4}-\d{2}-\d{2})[_ ](.+)", self.root.name)
+        if match:
+            return match.group(2), match.group(1)
+        taken = [info.taken for info in (read_metadata(photo.jpeg) for photo in photos) if info.taken]
+        return self.root.name, (min(taken).date().isoformat() if taken else fallback_date)
 
     def _xmp_ops(self, photo: Photo, target: Path, rating: int, transaction_id: str, *, copy=False) -> list[dict]:
         if not self.write_xmp:

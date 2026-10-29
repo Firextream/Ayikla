@@ -91,3 +91,59 @@ def test_corrupt_preview_still_exports_named_placeholder(shoot):
         session.toggle_edit(session.snapshot().kept[0])
         outputs = session.export_contact_sheet()
         assert not QImage(str(shoot / outputs["contact_sheet"][0])).isNull()
+
+
+# ── 1.6 review ────────────────────────────────────────────────────────────────
+
+def test_plural_and_metadata_lines():
+    from ayikla.contact_sheet import frames, metadata_lines
+    from datetime import datetime
+    from ayikla.metadata import CaptureInfo
+    assert (frames(1), frames(3)) == ("1 frame", "3 frames")
+    assert metadata_lines(CaptureInfo("SCAN.tif")) == []  # a scan: just the file name
+    partial = CaptureInfo("IMG.JPG", taken=datetime(2026, 10, 29, 12, 0), iso="400")
+    assert metadata_lines(partial) == ["ISO 400", "2026-10-29 12:00:00"]  # no "No lens metadata"
+
+
+@pytest.mark.parametrize("count,columns", [(1, 1), (3, 3), (9, 3), (10, 4)])
+def test_three_columns_up_to_nine_picks_then_four(count, columns):
+    grid = layout(count)
+    assert len({card.left() for card in grid.cards}) == columns
+
+
+def test_title_is_the_shoot_name_and_its_date(tmp_path):
+    shoot = tmp_path / "2026-10-12_club"
+    shoot.mkdir()
+    with select_photos(shoot, 1) as session:
+        assert session.sheet_title([], "2026-10-29") == ("club", "2026-10-12")
+    plain = tmp_path / "Autumn walk"
+    plain.mkdir()
+    with select_photos(plain, 2) as session:
+        photos = list(session.snapshot().kept)
+        assert session.sheet_title(photos, "2026-10-29") == ("Autumn walk", "2026-10-29")  # from capture time
+    scans = tmp_path / "Scans"
+    scans.mkdir()
+    Image.new("RGB", (60, 40)).save(scans / "SCAN.tif")
+    with ShootSession(scans) as session:
+        assert session.sheet_title(session.snapshot().pending, "2026-11-01") == ("Scans", "2026-11-01")
+
+
+def test_pdf_is_a4_with_margins_and_breaks_between_rows(shoot):
+    from ayikla.contact_sheet import pdf_pages
+    grid = layout(40)  # 10 rows of 4
+    pages = pdf_pages(grid)
+    assert len(pages) > 1 and pages[0][0] == 0
+    rows = grid.rows()
+    for top, bottom in pages:
+        assert bottom - top <= 2490  # 249 mm at 0.1 mm per pixel: fits A4 and Letter
+        assert not any(row_top < top < row_bottom or row_top < bottom < row_bottom for row_top, row_bottom in rows)
+    with select_photos(shoot, 13) as session:
+        result = session.export_contact_sheet(True, today=date(2026, 10, 29))
+        pdf = shoot / result["contact_sheet"][1]
+        document = QPdfDocument()
+        assert document.load(str(pdf)) == QPdfDocument.Error.None_
+        size = document.pagePointSize(0)
+        assert abs(size.width() - 595.3) < 1 and abs(size.height() - 841.9) < 1  # A4
+        assert document.pageCount() == len(pdf_pages(layout(13)))
+        document.close()
+        del document
