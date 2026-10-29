@@ -237,7 +237,7 @@ def test_retry_rescans_external_files_and_info(app, window, shoot):
 ])
 def test_actionable_turkish_errors(error, fragment):
     assert fragment in error_message(error)
-    assert "Retry" in error_message(error)
+    assert "Rescan folder" in error_message(error)
 
 
 def test_neutral_interface():

@@ -16,7 +16,7 @@ def test_english_start_help_and_errors():
     window = MainWindow()
     try:
         assert window.open_button.text() == "Open"
-        assert window.retry_button.text() == "Retry"
+        assert window.retry_button.text() == "Rescan folder"
         assert "Keep" in window.keep_button.text()
         assert "Reject" in window.reject_button.text()
         window.toggle_help()

@@ -37,6 +37,7 @@ QLabel#stepTitle { font-size: 15px; font-weight: 600; color: #e0e0e0; }
 QLabel#summaryTitle { font-size: 20px; font-weight: 600; color: #eeeeee; }
 QLabel#summaryCounts { font-size: 15px; color: #cccccc; }
 QFrame#stepCard, QFrame#summaryCard { background: #202020; border: 1px solid #333333; border-radius: 12px; }
+QFrame#summaryCard QCheckBox { background: transparent; }
 QFrame#bar { background: #1a1a1a; border: none; border-top: 1px solid #303030; }
 QPushButton { background: #262626; border: 1px solid #3a3a3a; border-radius: 6px;
               padding: 6px 8px; color: #cccccc; font-weight: 500; }
@@ -401,7 +402,7 @@ class MainWindow(QMainWindow):
         self.contact_sheet_button = button("Export contact sheet · Ctrl+Shift+E", self.export_contact_sheet)
         end_layout.addWidget(self.contact_sheet_button)
         self.contact_pdf = QCheckBox("Also save PDF")
-        end_layout.addWidget(self.contact_pdf)
+        end_layout.addWidget(self.contact_pdf, 0, Qt.AlignmentFlag.AlignHCenter)
         folder_links = QHBoxLayout()
         self.kept_folder_button = button("Kept photos  ↗", lambda: self.open_shoot_folder(KEPT), "ghost")
         self.rejected_folder_button = button("Rejected photos  ↗", lambda: self.open_shoot_folder(REJECTED), "ghost")
@@ -444,7 +445,7 @@ class MainWindow(QMainWindow):
         self.edit_badge = label("Edit pick", "badge")
         self.edit_badge.setStyleSheet("color: #dedede; background: #363636;")
         info.addWidget(self.edit_badge)
-        self.current_folder_button = button("↗", self.open_current_folder, "ghost")
+        self.current_folder_button = button("Open folder", self.open_current_folder, "ghost")
         self.current_folder_button.setAccessibleName("Open current photo folder")
         self.current_folder_button.setToolTip("Open this photo's folder")
         self.zoom_button = button("100%", self.toggle_zoom, "ghost")
@@ -506,7 +507,8 @@ class MainWindow(QMainWindow):
         self.feedback = label("Choose a shoot folder to start.", "muted")
         self.feedback.setWordWrap(True)
         footer.addWidget(self.feedback, 1)
-        self.retry_button = button("Retry", self.retry, "ghost")
+        self.retry_button = button("Rescan folder", self.retry, "ghost")
+        self.retry_button.setToolTip("Re-reads the folder and recovers interrupted operations")
         self.retry_button.hide()
         footer.addWidget(self.retry_button)
         footer.addWidget(label("Auto-save", "muted"))
@@ -770,10 +772,12 @@ class MainWindow(QMainWindow):
         if error:
             self._show_error(error)
             return
-        self.feedback.setText(self._success)
-        self.notify(self._success, self._toast_ms)
+        self.feedback.setText("")
+        if _result != "picks_unchanged":
+            self.notify(self._success, self._toast_ms)
         self.preview_photo = None
-        self.summary_requested = _result == "picks_refreshed" or (isinstance(_result, dict) and "contact_sheet" in _result)
+        self.summary_requested = (_result in ("picks_refreshed", "picks_unchanged")
+                                  or (isinstance(_result, dict) and "contact_sheet" in _result))
         self.zoomed = False
         self.canvas.set_zoom(False)
         self.cache.discard_full_resolution()
@@ -790,7 +794,7 @@ class MainWindow(QMainWindow):
         if self.session and self.session.faulted:
             message += "\nJournal write could not be verified. Resolve the disk problem and reopen the app."
         elif self.session and self.session.pending_id:
-            message += "\nThe operation is incomplete. Resolve the destination conflict or disk problem, then press Retry."
+            message += "\nThe operation is incomplete. Resolve the destination conflict or disk problem, then press Rescan folder."
         self.feedback.setText(message)
         self._update_enabled()
         box = QMessageBox(self)
@@ -1171,7 +1175,7 @@ class MainWindow(QMainWindow):
             self.summary_requested = True
             self.preview_photo = None
             self.refresh(rescan=False)
-            self._run(self.session.refresh_picks, "Refreshing edit-pick handoff…", "Edit-pick handoff saved")
+            self._run(self.session.refresh_picks, "Saving picks for Yazı…", "Picks saved for Yazı")
 
     def export_contact_sheet(self):
         if not self.session or self.busy or self.mode != "edit" or not self.summary_requested or not self.session.edits:

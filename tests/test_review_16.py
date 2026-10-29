@@ -258,3 +258,49 @@ def test_photo_thirds_step_and_double_click_zooms(app, window, shoot):
     assert name(window) == "IMG_0001.JPG"  # while zoomed a click only pans
     click(app, canvas, 30, y, double=True)  # zoomed: double-click anywhere returns to fit
     assert not window.zoomed
+
+
+# ── B labels and duplicates ───────────────────────────────────────────────────
+
+def test_open_folder_and_rescan_are_words(app, window, shoot):
+    photos(shoot, 1)
+    open_ready(app, window, shoot)
+    assert window.current_folder_button.text() == "Open folder"
+    assert window.retry_button.text() == "Rescan folder"
+    assert "recovers interrupted operations" in window.retry_button.toolTip()
+
+
+def test_round_two_says_picked_once_and_picks_toast_only_on_change(app, window, shoot):
+    photos(shoot, 2)
+    open_ready(app, window, shoot)
+    window.decide(True)
+    wait(app, lambda: not window.busy)
+    window.set_mode("edit")
+    wait(app, lambda: not window.canvas.image.isNull())
+    window.toggle_edit()
+    wait(app, lambda: not window.busy)
+    assert window.edit_badge.isVisible()
+    assert window.toast.text() == "Picked for editing"
+    assert window.feedback.text() == ""  # no status-row repeat
+    window.toast.dismiss()
+    window.show_summary()
+    wait(app, lambda: not window.busy)
+    # toggling the pick already wrote the picks file: nothing changed, no toast
+    assert not window.toast.isVisible()
+    assert window.summary_requested and window.viewer.currentIndex() == 1
+    assert window.session.refresh_picks() == "picks_unchanged"
+
+
+def test_pdf_checkbox_sits_centred_without_a_block(app, window, shoot):
+    from ayikla.ui import STYLE
+    assert "QFrame#summaryCard QCheckBox { background: transparent; }" in STYLE
+    photos(shoot, 1)
+    open_ready(app, window, shoot)
+    window.decide(True)
+    wait(app, lambda: not window.busy)
+    window.set_mode("edit")
+    window.show_summary()
+    wait(app, lambda: not window.busy)
+    box = window.contact_pdf
+    centre = box.mapTo(window.end_card, box.rect().center()).x()
+    assert abs(centre - window.end_card.width() / 2) <= 2

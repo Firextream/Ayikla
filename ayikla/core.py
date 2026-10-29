@@ -429,7 +429,7 @@ class ShootSession:
                 self._snapshot = None
 
     def rescan(self) -> Snapshot:
-        """Explicit refresh on open, Retry or conflict; publish only a valid scan."""
+        """Explicit refresh on open, Rescan folder or conflict; publish only a valid scan."""
         ignored: dict[str, int] = {}
         result = Snapshot(pair_photos(self.root, ignored=ignored),
                           pair_photos(self.root / KEPT, "kept", ignored=ignored),
@@ -520,7 +520,7 @@ class ShootSession:
         if self.faulted:
             raise RecoveryError("Journal could not be written to disk. Resolve the disk problem and reopen the app.")
         if self.pending_id:
-            raise RecoveryError("An interrupted operation is pending. Press Retry first.")
+            raise RecoveryError("An interrupted operation is pending. Press Rescan folder first.")
 
     def _move_op(self, source: Path, target: Path, expected: dict | None = None) -> dict:
         self._path(self._relative(source))
@@ -550,7 +550,7 @@ class ShootSession:
                     raise ConflictError(f"Source file was changed or is missing: {source.name}")
                 if source.exists() and ignored_file_reason(source):
                     raise ConflictError(f"Hidden/system or helper files cannot be processed: {source.name}. "
-                                        "Press Retry to rescan the folder.")
+                                        "Press Rescan folder.")
                 if op["kind"] == "move":
                     virtual[src_key] = None
             dst_key = op["dst"].casefold()
@@ -770,8 +770,9 @@ class ShootSession:
         self._ensure_ready()
         transaction_id = uuid.uuid4().hex
         operations = self._picks_ops(set(self.edits), transaction_id)
-        if operations:
-            self._transaction("picks_refresh", "", operations, dict(self.view), transaction_id)
+        if not operations:
+            return "picks_unchanged"
+        self._transaction("picks_refresh", "", operations, dict(self.view), transaction_id)
         return "picks_refreshed"
 
     def recover_pending(self) -> None:
@@ -811,7 +812,7 @@ class ShootSession:
                 continue
             if candidate.is_file() and not ignored_file_reason(candidate):
                 raise ConflictError(f"A new {extension[1:].upper()} RAW partner was found. "
-                                    "Press Retry to rescan, then make the decision again.")
+                                    "Press Rescan folder, then make the decision again.")
 
     @rescan_on_conflict
     def decide(self, photo: Photo, keep: bool, next_key: str | None = None) -> None:
