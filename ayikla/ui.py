@@ -27,7 +27,7 @@ QWidget { background: #1a1a1a; color: #dddddd; font-family: 'Segoe UI'; font-siz
 QLabel { background: transparent; }
 QLabel#brand { font-size: 15px; font-weight: 700; letter-spacing: 3px; color: #eeeeee; }
 QLabel#muted { color: #999999; }
-QLabel#hero { font-size: 20px; font-weight: 600; color: #eeeeee; }
+QLabel#hero { font-size: 28px; font-weight: 600; color: #eeeeee; }
 QLabel#eyebrow { color: #999999; font-size: 12px; letter-spacing: 2px; }
 QLabel#counter { font-size: 12px; color: #aaaaaa; }
 QLabel#filename { font-size: 13px; font-weight: 600; color: #dddddd; }
@@ -834,7 +834,10 @@ class MainWindow(QMainWindow):
             self.canvas.image = QImage()
             if photo:
                 self.filename.setText(photo.jpeg.name)
-                self.filename.setMaximumWidth(min(220, max(72, self.filename.fontMetrics().horizontalAdvance(photo.jpeg.name) + 4)))
+                # whole names up to 220 px: the decision row gives up its free space before the name
+                width = min(220, max(72, self.filename.fontMetrics().horizontalAdvance(photo.jpeg.name) + 4))
+                self.filename.setMinimumWidth(width)
+                self.filename.setMaximumWidth(width)
                 self.raw_badge.setText(f"{photo.jpeg.suffix[1:].upper()} + {photo.raw.suffix[1:].upper()}" if photo.raw
                                        else f"{photo.jpeg.suffix[1:].upper()} · No RAW")
                 self.raw_badge.setToolTip("Paired preview and RAW" if photo.raw else "Film / scan · No matching RAW")
