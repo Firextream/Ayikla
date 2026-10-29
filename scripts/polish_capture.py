@@ -14,6 +14,10 @@ sys.path.insert(0, str(ROOT))
 
 def show_import_progress(dialog):
     """What a running import shows, without copying anything."""
+    import time
+    if hasattr(dialog, "update_bytes"):  # 1.6: size and remaining time
+        dialog.started = time.monotonic() - 22
+        dialog.update_bytes(448_000_000, 1_200_000_000)
     dialog.update_progress(142, 380, "IMG_0142.CR3")
 
 

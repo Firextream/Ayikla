@@ -105,18 +105,50 @@ def _regular_tree(path):
     return absolute.resolve(strict=True)
 
 
+def shoot_folder_name(name, today=None):
+    """The folder an import creates: YYYY-MM-DD_<name>."""
+    return f"{(today or date.today()).isoformat()}_{name.strip()}"
+
+
+def valid_shoot_name(name):
+    name = name.strip()
+    return bool(name) and len(name) <= 80 and not re.search(r'[<>:"/\\|?*\x00-\x1f]', name) \
+        and not name.endswith((".", " ")) and name not in {".", ".."}
+
+
+def card_folders():
+    """DCIM folders on removable drives (Windows), offered first as import sources."""
+    if os.name != "nt":
+        return []
+    import ctypes
+    kernel = ctypes.windll.kernel32
+    mask, found = kernel.GetLogicalDrives(), []
+    for index in range(26):
+        if not mask & (1 << index):
+            continue
+        root = f"{chr(65 + index)}:\\"
+        if kernel.GetDriveTypeW(root) == 2:  # DRIVE_REMOVABLE
+            dcim = Path(root) / "DCIM"
+            try:
+                if dcim.is_dir():
+                    found.append(dcim)
+            except OSError:
+                continue  # an empty card reader slot
+    return found
+
+
 def import_folder(source, destination_root, name, *, cancel=None, progress=None,
-                  today=None, active_session=None):
+                  today=None, active_session=None, on_bytes=None):
     cancel = cancel if cancel is not None else Event()
     progress = progress or (lambda done, total, name: None)
+    on_bytes = on_bytes or (lambda done, total: None)
     name = name.strip()
-    if (not name or len(name) > 80 or re.search(r'[<>:"/\\|?*\x00-\x1f]', name)
-            or name.endswith((".", " ")) or name in {".", ".."}):
+    if not valid_shoot_name(name):
         raise ConflictError("Enter a shoot name without path separators or Windows filename symbols.")
     source, root = _regular_tree(source), _regular_tree(destination_root)
     if not source.is_dir() or not root.is_dir():
         raise ConflictError("Choose existing source and destination folders.")
-    folder = root / f"{(today or date.today()).isoformat()}_{name}"
+    folder = root / shoot_folder_name(name, today)
     if folder.is_relative_to(source) or source.is_relative_to(folder):
         raise ConflictError("The import destination must be outside the source/card.")
     if folder.exists() and is_link(folder):
@@ -144,6 +176,9 @@ def import_folder(source, destination_root, name, *, cancel=None, progress=None,
         group["raw" if path.suffix.casefold() in RAW_EXTENSIONS else "preview"].add(path.name.casefold())
     if any(len(group["preview"]) > 1 or len(group["raw"]) > 1 for group in groups.values()):
         raise ConflictError("Card files have ambiguous JPEG/TIFF or RAW partners with the same stem.")
+    sizes = [path.stat().st_size for path in files]
+    total_bytes, done_bytes = sum(sizes), 0
+    on_bytes(0, total_bytes)
     folder.mkdir(exist_ok=True)
     owned = active_session is None or active_session.root != folder
     session = ShootSession(folder) if owned else active_session
@@ -180,6 +215,8 @@ def import_folder(source, destination_root, name, *, cancel=None, progress=None,
             else:
                 _copy_one(session, journal, batch, path, before, cancel, destination)
                 copied += 1
+            done_bytes += sizes[index]
+            on_bytes(done_bytes, total_bytes)
             progress(index + 1, len(files), path.name)
         journal.append({"type": "end", "batch": batch, "cancelled": cancel.is_set()})
         return ImportResult(folder, copied, skipped, cancel.is_set())

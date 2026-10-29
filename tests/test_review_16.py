@@ -304,3 +304,66 @@ def test_pdf_checkbox_sits_centred_without_a_block(app, window, shoot):
     box = window.contact_pdf
     centre = box.mapTo(window.end_card, box.rect().center()).x()
     assert abs(centre - window.end_card.width() / 2) <= 2
+
+
+# ── D import from card ────────────────────────────────────────────────────────
+
+def test_import_paths_are_shortened_from_the_middle_with_the_full_path_in_the_tooltip(app, window, tmp_path, monkeypatch):
+    from ayikla import importer
+    from ayikla.import_dialog import short_path
+    assert short_path(r"E:\Card reader\PHOTO-CLUB-SD\DCIM\100CANON") == r"E:\…\DCIM\100CANON"
+    assert short_path(r"E:\DCIM\100CANON") == r"E:\DCIM\100CANON"
+    monkeypatch.setattr(importer, "card_folders", lambda: [])
+    window.choose_import()
+    dialog = window.import_dialog
+    long = tmp_path / ("very long folder name " * 4) / "DCIM" / "100CANON"
+    dialog.source.setText(str(long))
+    app.processEvents()
+    assert dialog.minimumWidth() >= 720 and dialog.isSizeGripEnabled()
+    shown = dialog.source.shown_text()
+    assert shown.endswith("100CANON") and dialog.source.toolTip() == str(long)
+    assert dialog.source.text() == str(long)  # the full path is what gets imported
+    dialog.reject()
+
+
+def test_import_shows_the_folder_it_will_create_and_size_progress(app, window, monkeypatch):
+    from datetime import date
+    from ayikla import importer
+    monkeypatch.setattr(importer, "card_folders", lambda: [])
+    window.choose_import()
+    dialog = window.import_dialog
+    dialog.name.setText("club")
+    assert dialog.folder_preview.text() == f"Creates  {date.today().isoformat()}_club"
+    dialog.name.setText("a/b")
+    assert "cannot contain" in dialog.folder_preview.text()
+    dialog.started = time.monotonic() - 20
+    dialog.update_bytes(400_000_000, 1_200_000_000)
+    dialog.update_progress(142, 380, "IMG_0142.CR3")
+    assert dialog.status.text() == "Importing… 142 / 380 files · 1.2 GB · ~40 s"
+    dialog.reject()
+
+
+def test_removable_cards_with_dcim_are_offered_first(app, window, tmp_path, monkeypatch):
+    from ayikla import importer
+    card = tmp_path / "card" / "DCIM"
+    card.mkdir(parents=True)
+    monkeypatch.setattr(importer, "card_folders", lambda: [card])
+    window.choose_import()
+    dialog = window.import_dialog
+    assert dialog.source.text() == str(card)
+    offered = [dialog.cards.itemAt(i).widget() for i in range(dialog.cards.count())]
+    assert any(w is not None and w.toolTip() == str(card) for w in offered)
+    dialog.reject()
+
+
+def test_import_reports_bytes_alongside_the_file_count(tmp_path):
+    from ayikla.importer import import_folder
+    source, root = tmp_path / "card", tmp_path / "shoots"
+    source.mkdir()
+    root.mkdir()
+    for index in (1, 2):
+        Image.new("RGB", (40, 30)).save(source / f"IMG_{index}.JPG")
+    seen = []
+    import_folder(source, root, "club", on_bytes=lambda done, total: seen.append((done, total)))
+    total = sum(p.stat().st_size for p in source.iterdir())
+    assert seen[0] == (0, total) and seen[-1] == (total, total)

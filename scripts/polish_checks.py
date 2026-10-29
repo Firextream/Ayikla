@@ -134,3 +134,18 @@ def check_keys(window):
         cards.append({"mode": mode, "height": card.height()})
     assert len({card["height"] for card in cards}) == 1, cards
     return {**check_header(window), "cards": cards}
+
+
+def check_import(dialog):
+    """Import dialog: resizable, ≥ 720 px, short card paths that fit, the folder name preview."""
+    assert dialog.minimumWidth() >= 720 and dialog.isSizeGripEnabled()
+    paths = {}
+    for field in (dialog.source, dialog.destination):
+        shown = field.shown_text()
+        assert "…" not in shown[:3], shown  # never cut from the left
+        assert field.fontMetrics().horizontalAdvance(shown) <= field.contentsRect().width(), shown
+        assert field.toolTip() == field.text()
+        paths[shown] = field.text()
+    assert dialog.folder_preview.text().startswith("Creates  ")
+    return {"paths": list(paths), "preview": dialog.folder_preview.text(), "status": dialog.status.text(),
+            "width": dialog.width()}
