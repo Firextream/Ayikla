@@ -4,16 +4,21 @@
 
 A simple, keyboard-first Windows photo culling app for RAW+JPEG shoots. First choose what to keep, then pick what to edit in Lightroom.
 
-**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.6.0b1 Beta**
+**Windows x64 · beta · MIT**
 
-### [Latest published download · 1.2.0b1 · Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
+[Download Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.6.0b1/Ayikla-1.6.0b1-Windows-x64.zip) · **Latest: [v1.6.0b1](https://github.com/Firextream/Ayikla/releases/tag/v1.6.0b1)**
 
-1.6.0b1 is a local beta candidate; its release has not been tagged or published.
-Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
+[Release notes](docs/releases/v1.6.0b1.md) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
 
-[Release notes](https://github.com/Firextream/Ayikla/releases/tag/v1.2.0b1) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
+![Ayikla round 1 with Keep and Reject controls](docs/polish-1.6/after/100/round1.png)
 
-![Ayikla gallery with a neutral dark interface and Keep / Reject controls](docs/gallery.png)
+<table>
+  <tr>
+    <td width="33%"><img src="docs/polish-1.6/after/100/start.png" alt="Ayikla start screen" width="280"><br><sub>Open a shoot</sub></td>
+    <td width="33%"><img src="docs/polish-1.6/after/100/burst.png" alt="Burst comparison with a selected keeper" width="280"><br><sub>Compare a burst</sub></td>
+    <td width="33%"><img src="docs/polish-1.6/after/100/contact.png" alt="Contact sheet export" width="280"><br><sub>Share your shortlist</sub></td>
+  </tr>
+</table>
 
 *The photos in these screenshots are generated test images, not personal photographs.*
 
@@ -32,7 +37,7 @@ The package is unsigned, so Windows may show a warning. If it will not open, rep
 | **1 · Keep / Reject** | Which frames should I keep? | Keep moves JPG + matching RAW to `01_secilen`; Reject moves them to `_red`. |
 | **2 · Edit / Lightroom** | Which kept frames should I edit? | Press M, then E to **copy** JPG + RAW into `02_edit`. |
 
-**Delete means Reject, not permanent deletion.** Z undoes the last decision, including after restarting the app. Decisions are saved automatically; there is no separate Save button. Import `02_edit` into Lightroom Classic yourself.
+**Reject · ←** in Fast culling moves the photo and matching RAW to `_red`; X / Delete also reject in either arrow-key mode. Z undoes the last decision, including after restarting the app. Decisions are saved automatically; there is no separate Save button. Import `02_edit` into Lightroom Classic yourself.
 
 Folder names stay the same as earlier Turkish builds so existing shoots and journals continue to work.
 
@@ -244,8 +249,8 @@ We especially want feedback on the **Keep vs Edit distinction**, navigation spee
 
 Include the version shown in H help, Windows version, display scaling, camera and approximate photo count. Do not post private photos, personal paths, settings files or complete shoot journals.
 
-**272 tests passed**, including reopening and undoing a journal from the previous Turkish release. Windows DPI render checks cover 100%, 125% and 150%; the package is exercised on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
+**276 tests passed**, including reopening and undoing a journal from the previous Turkish release. Windows DPI render checks cover 100%, 125% and 150%; the package is exercised on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
 
 [Five-minute beta guide](BETA.md) · [Validation and benchmark report (Turkish)](RAPOR.md) · [Run from source and build](docs/GELISTIRME.md)
 
-Python 3.12 + PySide6; Pillow reads EXIF headers only. Third-party license notices are included in [licenses](licenses/NOTICE.txt) and the app package. No open-source license has been selected for Ayikla's own source yet.
+Python 3.12 + PySide6; Pillow reads EXIF headers only. Third-party license notices are included in [licenses](licenses/NOTICE.txt) and the app package. Ayikla's own source is released under the [MIT License](LICENSE).
