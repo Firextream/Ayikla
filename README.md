@@ -4,11 +4,11 @@
 
 A simple, keyboard-first Windows photo culling app for RAW+JPEG shoots. First choose what to keep, then pick what to edit in Lightroom.
 
-**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.5.0b1 Beta**
+**Windows x64 · English interface · JPG/JPEG, TIFF + common camera RAW formats · 1.6.0b1 Beta**
 
 ### [Latest published download · 1.2.0b1 · Windows ZIP](https://github.com/Firextream/Ayikla/releases/download/v1.2.0b1/Ayikla-1.2.0b1-Windows-x64.zip)
 
-1.5.0b1 is a local beta candidate; its release has not been tagged or published.
+1.6.0b1 is a local beta candidate; its release has not been tagged or published.
 Build it with `build.ps1`; the application is `dist/Ayikla/Ayikla.exe`.
 
 [Release notes](https://github.com/Firextream/Ayikla/releases/tag/v1.2.0b1) · [Share feedback](https://github.com/Firextream/Ayikla/issues/new?template=feedback.md) · [Report a bug](https://github.com/Firextream/Ayikla/issues/new?template=bug_report.md)
@@ -38,12 +38,22 @@ Folder names stay the same as earlier Turkish builds so existing shoots and jour
 
 ## Keyboard
 
+On first launch Ayikla asks how the arrow keys should work; change it any time in **Settings → Arrow keys**.
+
+| Arrow keys | Fast culling (default) | Browse first |
+|---|---|---|
+| Keep → `01_secilen` | → / Enter | Enter |
+| Reject → `_red` (no permanent deletion) | ← / X / Delete | X / Delete |
+| Previous / next without deciding | ↑ / ↓ | ← / → (↑ / ↓ too) |
+
+In both modes Backspace / PageUp go back, Space / PageDown go forward (the end of
+round 2 shows the summary), and every Reject shows "Rejected IMG_0001 · Z to undo"
+for three seconds. Clicking the left / right third of the photo also steps back /
+forward; double-click in the middle is 100% / Fit. The **Undo · Z**, **Previous**
+and **Next** buttons sit in the row with Reject and Keep.
+
 | Key | Action |
 |---|---|
-| → / Enter | Round 1: Keep → `01_secilen` |
-| ← / X / Delete | Round 1: Reject → `_red`; no permanent deletion |
-| Space / ↓ | Next photo without deciding; show summary at the end of round 2 |
-| ↑ | Previous photo |
 | Z | Undo the last decision, including after a restart |
 | M | Switch between culling and edit picks |
 | E | Round 2: copy to `02_edit`; press again to remove the edit pick |
@@ -86,7 +96,8 @@ another shoot; previous sessions are not included. Round 2 shows the current pos
 The photo now has a quieter two-row footer and 16 px fit margins. Round instructions
 are in Help; ignored helper-file counts are in Folders. Start-screen cards wrap
 their text. Burst comparison uses a 2 px keeper border and image-corner number
-badges. See [before/after screenshots at 100% and 125%](docs/polish-1.5/README.md).
+badges. See [before/after screenshots at 100% and 125%](docs/polish-1.5/README.md) and the
+[1.6 review screenshots at 100/125/150%](docs/polish-1.6/README.md).
 
 The next two and previous one photos are decoded in background threads. This was
 already enabled in 1.4 and remains enabled in 1.5. A same-machine test on 300
@@ -98,8 +109,11 @@ method, Previous timings, sustained navigation and raw results.
 
 ## Import from a card
 
-Press **Ctrl+I**, or **Settings → Import from card**. Choose the card/source,
-an existing destination root and a shoot name. The last destination root is
+Press **Ctrl+I**, or **Settings → Import from card**. Removable drives with a
+DCIM folder are offered first. Choose the card/source, an existing destination
+root and a shoot name; the dialog shows the folder it will create
+(`2026-10-29_club`) and, while copying, files, size and remaining time. Long paths
+show as `E:\…\DCIM\100CANON` with the full path in the tooltip. The last destination root is
 remembered. Ayikla scans nested source folders and copies supported JPEG, TIFF
 and RAW files into `<root>/YYYY-MM-DD_<name>`; card folders are flattened.
 Every new copy is checked by size and SHA-256 before publication. Source files
@@ -116,9 +130,11 @@ inside the source/card. Folder links and hidden/helper files are not imported.
 ## Share a contact sheet
 
 In the **round 2 summary**, choose **Export contact sheet**, or Ctrl+Shift+E.
-Check **Also save PDF** for an optional PDF of the same grid. The sheet contains
-only edit picks, with filenames and available exposure, lens and capture-time
-metadata below each preview. It is saved as `02_edit/contact_sheet_<date>.jpg`
+Check **Also save PDF** for an optional PDF of the same grid on A4 pages (15 mm
+margins; the content also fits US Letter; pages break between rows). The sheet is
+titled with the shoot name and date and contains only edit picks, three columns up
+to nine picks and four above. Each preview shows its filename and the exposure,
+lens and capture-time lines that exist; a scan without EXIF shows just its name. It is saved as `02_edit/contact_sheet_<date>.jpg`
 (and `.pdf`). Existing exports receive `_2`, `_3`, etc.; nothing is overwritten.
 One Z archives both outputs together. Portrait and landscape images fit without
 cropping; unavailable previews are labeled. Very large sheets are limited to
@@ -183,7 +199,7 @@ A matching **JPG/JPEG with the same filename stem** is required for RAW pairing.
 
 ## Inspect your photos and reach your files
 
-The **Folders** menu opens the shoot, kept, rejected or edit folder in Explorer and shows current counts. **Open folder ↗** below the photo opens that photo's current folder. The round summary also links to kept and rejected files.
+The **Folders** menu opens the shoot, kept, rejected or edit folder in Explorer and shows current counts. **Open folder** below the photo opens that photo's current folder. The round summary also links to kept and rejected files.
 
 Filmstrip edges: **green = kept, red = rejected, purple = picked for editing**. Rejected photos can be previewed; decision keys are disabled during that preview. Capture times within one second show a **Burst 2/5** hint. Missing EXIF fields show “—”.
 
@@ -214,7 +230,7 @@ Normal JPEG previews and thumbnails use scaled decoding; full-resolution output 
 
 - No photo deletion and no overwriting existing destinations. `_red` is never emptied by the app.
 - Removed edit copies are moved to `.ayikla_saklanan`. Keep that folder and `ayikla_log.jsonl` for recovery and undo.
-- File operations are journaled before they run. On reopening, interrupted operations are recovered when possible. **Retry** retries recovery and rescans the folder after external changes.
+- File operations are journaled before they run. On reopening, interrupted operations are recovered when possible. **Rescan folder** retries recovery and re-reads the folder after external changes.
 - macOS `._*`, `Thumbs.db`, `desktop.ini`, `.DS_Store` and Windows hidden/system files are ignored. They are not counted, displayed, moved or copied.
 - A corrupt JPEG can still be kept or rejected. JPEGs that failed to open during the current session appear in the round summary.
 
@@ -228,7 +244,7 @@ We especially want feedback on the **Keep vs Edit distinction**, navigation spee
 
 Include the version shown in H help, Windows version, display scaling, camera and approximate photo count. Do not post private photos, personal paths, settings files or complete shoot journals.
 
-**250 tests passed**, including reopening and undoing a journal from the previous Turkish release. Windows DPI render checks cover 100%, 125% and 150%; the package is exercised on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
+**272 tests passed**, including reopening and undoing a journal from the previous Turkish release. Windows DPI render checks cover 100%, 125% and 150%; the package is exercised on Windows 11 x64 with generated JPEGs and dummy RAW files. Other computers, multiple monitors, real card disconnection and ICC/color accuracy still need field testing. Minimum window size is 1024×680 logical pixels. RAW images are not decoded; automatic Lightroom import is not supported.
 
 [Five-minute beta guide](BETA.md) · [Validation and benchmark report (Turkish)](RAPOR.md) · [Run from source and build](docs/GELISTIRME.md)
 

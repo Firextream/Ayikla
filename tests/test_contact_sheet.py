@@ -105,6 +105,27 @@ def test_plural_and_metadata_lines():
     assert metadata_lines(partial) == ["ISO 400", "2026-10-29 12:00:00"]  # no "No lens metadata"
 
 
+@pytest.mark.parametrize("size", [(300, 200), (200, 300), (300, 300), (600, 100)])
+def test_thumbnail_preserves_aspect_ratio_with_paper_in_unused_space(tmp_path, size):
+    from types import SimpleNamespace
+    from PySide6.QtCore import Qt
+    from ayikla.contact_sheet import PAPER
+
+    path = tmp_path / "photo.png"
+    Image.new("RGB", size, "red").save(path)
+    sheet, grid = render([SimpleNamespace(jpeg=path)], "Photos", "2026-10-29")
+    card = grid.cards[0]
+    box = card.adjusted(12, 12, -12, 0)
+    box.setHeight(250)
+    fitted = QSize(*size).scaled(box.size(), Qt.AspectRatioMode.KeepAspectRatio)
+    left = box.x() + (box.width() - fitted.width()) // 2
+    top = box.y() + (box.height() - fitted.height()) // 2
+    for y in range(box.top(), box.bottom() + 1):
+        for x in range(box.left(), box.right() + 1):
+            expected = "#ff0000" if left <= x < left + fitted.width() and top <= y < top + fitted.height() else PAPER
+            assert sheet.pixelColor(x, y).name() == expected
+
+
 @pytest.mark.parametrize("count,columns", [(1, 1), (3, 3), (9, 3), (10, 4)])
 def test_three_columns_up_to_nine_picks_then_four(count, columns):
     grid = layout(count)

@@ -15,6 +15,7 @@ sys.path.insert(0, str(ROOT))
 def show_import_progress(dialog):
     """What a running import shows, without copying anything."""
     import time
+    dialog.set_copying(True)
     if hasattr(dialog, "update_bytes"):  # 1.6: size and remaining time
         dialog.started = time.monotonic() - 22
         dialog.update_bytes(448_000_000, 1_200_000_000)
@@ -169,6 +170,7 @@ def capture(output, scale, check=False):
         wait(lambda: importer.isVisible())
         snap("import", importer)
         importer.progress.setRange(0, 1)
+        importer.set_copying(False)
         importer.reject()
         (output / "capture.json").write_text(json.dumps(report, indent=2), "utf-8")
     finally:

@@ -136,6 +136,7 @@ class ImportDialog(QDialog):
         actions.addWidget(self.start_button)
         actions.addWidget(self.cancel_button)
         layout.addLayout(actions)
+        self.set_copying(False)
         self.pool = QThreadPool(self)
         self.pool.setMaxThreadCount(1)
 
@@ -170,15 +171,27 @@ class ImportDialog(QDialog):
         if folder:
             field.setText(folder)
 
+    def set_copying(self, copying):
+        self.running = copying
+        for control in (self.source, self.destination, self.name, self.start_button, *self.browse_buttons):
+            control.setEnabled(not copying)
+        for control, primary in ((self.start_button, not copying), (self.cancel_button, copying)):
+            control.setObjectName("primary" if primary else "")
+            control.setAutoDefault(False)
+            control.setDefault(primary)
+            control.style().unpolish(control)
+            control.style().polish(control)
+            control.update()
+        if copying:
+            self.cancel_button.setFocus()
+
     def start(self):
         if self.running:
             return
         if not all(field.text().strip() for field in (self.source, self.destination, self.name)):
             self.status.setText("Choose a source, destination root and shoot name.")
             return
-        self.running = True
-        for control in (self.source, self.destination, self.name, self.start_button, *self.browse_buttons):
-            control.setEnabled(False)
+        self.set_copying(True)
         self.status.setText("Scanning source files…")
         self.progress.setRange(0, 0)
         self.task = ImportTask(self.source.text(), self.destination.text(), self.name.text(), self.session)
@@ -205,7 +218,7 @@ class ImportDialog(QDialog):
         self.status.setToolTip(filename)
 
     def finished_import(self, result, error):
-        self.running = False
+        self.set_copying(False)
         self.task = None
         self.cancel_button.setEnabled(True)
         self.cancel_button.setText("Close")
@@ -214,8 +227,6 @@ class ImportDialog(QDialog):
             self.status.setText(error_message(error))
             self.progress.setRange(0, 1)
             self.progress.setValue(0)
-            for control in (self.source, self.destination, self.name, self.start_button, *self.browse_buttons):
-                control.setEnabled(True)
             return
         self.completed.emit(result)
         self.accept()

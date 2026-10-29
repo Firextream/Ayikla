@@ -23,6 +23,7 @@ class SheetLayout:
 
 
 HEADER = 140
+PAPER = "#f1f0eb"
 # PDF: A4 pages with 15 mm margins; the content area (180 × 249 mm) also fits US Letter.
 # The raster is printed at 0.1 mm per pixel, so the 4-column sheet (1800 px) fills 180 mm.
 PAGE_MM, MARGIN_MM, CONTENT_MM, MM_PER_PIXEL = (210, 297), 15, (180, 249), 0.1
@@ -70,7 +71,7 @@ def render(photos, title, date_text):
     sheet = QImage(grid.width, grid.height, QImage.Format.Format_RGB32)
     if sheet.isNull():
         raise AyiklaError("Not enough memory for this contact sheet. Export fewer picks.")
-    sheet.fill(QColor("#f1f0eb"))
+    sheet.fill(QColor(PAPER))
     painter = QPainter(sheet)
     painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
     painter.setPen(QColor("#222222"))
@@ -84,7 +85,8 @@ def render(photos, title, date_text):
     for photo, card in zip(photos, grid.cards):
         painter.fillRect(card, QColor("#ffffff"))
         image_rect = QRect(card.x() + 12, card.y() + 12, card.width() - 24, 250)
-        painter.fillRect(image_rect, QColor("#222222"))
+        # Keep the fixed rows for PDF pagination and fit every photo without cropping.
+        painter.fillRect(image_rect, QColor(PAPER))
         image, error = read_image(photo.jpeg, image_rect.size())
         if not image.isNull():
             size = image.size().scaled(image_rect.size(), Qt.AspectRatioMode.KeepAspectRatio)
@@ -93,7 +95,7 @@ def render(photos, title, date_text):
                            size.width(), size.height())
             painter.drawImage(target, image)
         else:
-            painter.setPen(QColor("#eeeeee"))
+            painter.setPen(QColor("#666666"))
             painter.setFont(_font(20))
             painter.drawText(image_rect, Qt.AlignmentFlag.AlignCenter, "Preview unavailable")
         extra = metadata_lines(read_metadata(photo.jpeg))

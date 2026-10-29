@@ -1,0 +1,209 @@
+{
+  "version": "1.6.0b1",
+  "backend": "windows",
+  "scale": 1.0,
+  "screens": {
+    "keys": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 391,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "cards": [
+          {
+            "mode": "fast",
+            "height": 213
+          },
+          {
+            "mode": "browse",
+            "height": 213
+          }
+        ]
+      }
+    },
+    "start": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 391,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "cards": [
+          {
+            "card_height": 125,
+            "body_height": 34,
+            "needed": 34
+          },
+          {
+            "card_height": 125,
+            "body_height": 34,
+            "needed": 34
+          }
+        ]
+      }
+    },
+    "round1": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 42,
+        "nav_offset_from_centre": 0.5,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.87,
+          3.87,
+          3.73
+        ],
+        "photo_height": 768
+      }
+    },
+    "burst": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "selection_border": 2,
+        "number_badges_on_images": true,
+        "image_area_of_cell": [
+          0.75,
+          0.75,
+          0.75,
+          0.75
+        ],
+        "button_height": 34,
+        "button_gaps": 12
+      }
+    },
+    "round2": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "control_row_height": 42,
+        "nav_offset_from_centre": 17.5,
+        "single_counter": true,
+        "disabled_contrast": [
+          3.87,
+          3.87,
+          3.73
+        ],
+        "photo_height": 768
+      }
+    },
+    "summary": {
+      "logical": [
+        1440,
+        960
+      ],
+      "pixels": [
+        1440,
+        960
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "menu_gaps": [
+          24,
+          24,
+          24,
+          24
+        ],
+        "menu_baselines_aligned": true,
+        "photo_controls_hidden": true,
+        "summary_width": 520
+      }
+    },
+    "contact": {
+      "pixels": [
+        1800,
+        602
+      ],
+      "source": "contact_sheet_2026-10-29.jpg"
+    },
+    "import": {
+      "logical": [
+        760,
+        380
+      ],
+      "pixels": [
+        760,
+        380
+      ],
+      "dpr": 1.0,
+      "photo_height": 768,
+      "checks": {
+        "paths": [
+          "C:\\\u2026\\DCIM\\100CANON",
+          "C:\\\u2026\\Photo club archive\\Imported shoots"
+        ],
+        "preview": "Creates  2026-10-29_club",
+        "status": "Importing\u2026 142 / 380 files \u00b7 1.2 GB \u00b7 ~37 s",
+        "width": 760,
+        "copying": true,
+        "import_enabled": false,
+        "cancel_primary": true
+      }
+    }
+  }
+}

@@ -481,7 +481,7 @@ class MainWindow(QMainWindow):
         right.setContentsMargins(0, 0, 0, 0)
         right.setSpacing(8)
         right.addStretch(1)
-        self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
+        self.reject_button = button("Reject", lambda: self.decide(False), "reject")
         right.addWidget(self.reject_button)
         self.keep_button = button("Keep  ·  →", lambda: self.decide(True), "keep")
         right.addWidget(self.keep_button)
@@ -592,6 +592,7 @@ class MainWindow(QMainWindow):
         self.previous_button.setToolTip(f"Previous photo · {keys['previous']} / Backspace / PageUp")
         self.next_button.setToolTip(f"Next photo without deciding · {keys['next']} / Space / PageDown")
         self.keep_button.setText("Keep  ·  Enter" if browse else "Keep  ·  →")
+        self.reject_button.setText("Reject  ·  X" if browse else "Reject  ·  ←")
         self.keep_button.setToolTip(f"Keep · {keys['keep']} · moves photo + matching RAW to 01_secilen")
         self.reject_button.setToolTip(f"Reject · {keys['reject']} · moves the photo + matching RAW to _red. "
                                       "Z to undo; no files are deleted.")

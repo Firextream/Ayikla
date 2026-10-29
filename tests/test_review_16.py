@@ -1,11 +1,13 @@
 """1.6 review: navigation buttons, the arrow-key choice, click zones and the Reject notice."""
 
+import os
 import time
+from pathlib import Path
 
 import pytest
 from PIL import Image
 from PySide6.QtCore import QEvent, QPointF, Qt
-from PySide6.QtGui import QMouseEvent
+from PySide6.QtGui import QFontDatabase, QMouseEvent
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -17,7 +19,12 @@ from scripts.polish_checks import contrast, row_span
 
 @pytest.fixture(scope="module")
 def app():
-    return QApplication.instance() or QApplication([])
+    application = QApplication.instance() or QApplication([])
+    # The offscreen backend needs the same fonts as the native DPI captures,
+    # even when this module runs before the other polish tests.
+    for name in ("segoeui.ttf", "segoeuib.ttf", "seguisym.ttf"):
+        QFontDatabase.addApplicationFont(str(Path(os.environ["WINDIR"]) / "Fonts" / name))
+    return application
 
 
 def wait(app, predicate, seconds=10):
@@ -209,10 +216,16 @@ def test_settings_switches_the_map_and_help_shows_it(app, window, shoot):
     QTest.keyClick(window, Qt.Key.Key_H)
     assert "Arrow keys: Fast culling" in window.canvas.help.text()
     assert "→ / Enter   Keep" in window.canvas.help.text()
+    assert window.reject_button.text() == "Reject  ·  ←"
+    assert "Reject · ← / X / Delete" in window.reject_button.toolTip()
+    assert "← / X / Delete   Reject" in window.canvas.help.text()
     for title in ("ROUND 1", "ROUND 2", "ANYWHERE"):
         assert title in window.canvas.help.text()
     window.arrow_actions["browse"].trigger()
     assert window.arrow_mode == "browse" and "Arrow keys: Browse first" in window.canvas.help.text()
+    assert window.reject_button.text() == "Reject  ·  X"
+    assert "Reject · X / Delete" in window.reject_button.toolTip()
+    assert "X / Delete   Reject" in window.canvas.help.text()
     assert "Enter   Keep" in window.canvas.help.text() and "← / Backspace / PageUp   Previous" in window.canvas.help.text()
     assert window.pages.currentIndex() == 1  # switching keeps the shoot on screen
 

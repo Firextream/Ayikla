@@ -1,3 +1,3 @@
 """Ayikla: non-destructive photo culling."""
 
-__version__ = "1.5.0b1"
+__version__ = "1.6.0b1"

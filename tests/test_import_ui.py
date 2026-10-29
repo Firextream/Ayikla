@@ -38,7 +38,12 @@ def test_ctrl_i_imports_opens_and_remembers_destination(tmp_path, monkeypatch):
         dialog.destination.setText(str(destination))
         dialog.name.setText("club")
         dialog.start_button.click()
+        assert not dialog.start_button.isEnabled() and not dialog.start_button.isDefault()
+        assert dialog.cancel_button.isEnabled() and dialog.cancel_button.isDefault()
+        assert dialog.cancel_button.objectName() == "primary"
         wait(app, lambda: window.session is not None and not window.busy and not dialog.running)
+        assert dialog.start_button.isEnabled() and dialog.start_button.isDefault()
+        assert dialog.cancel_button.objectName() != "primary"
         assert not errors
         assert window.session.root.parent == destination
         assert window.current.key == "img_1"

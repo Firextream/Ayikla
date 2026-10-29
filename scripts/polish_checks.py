@@ -139,6 +139,10 @@ def check_keys(window):
 def check_import(dialog):
     """Import dialog: resizable, ≥ 720 px, short card paths that fit, the folder name preview."""
     assert dialog.minimumWidth() >= 720 and dialog.isSizeGripEnabled()
+    if dialog.running:
+        assert not dialog.start_button.isEnabled() and not dialog.start_button.isDefault()
+        assert dialog.cancel_button.isEnabled() and dialog.cancel_button.isDefault()
+        assert dialog.cancel_button.objectName() == "primary"
     paths = {}
     for field in (dialog.source, dialog.destination):
         shown = field.shown_text()
@@ -148,4 +152,6 @@ def check_import(dialog):
         paths[shown] = field.text()
     assert dialog.folder_preview.text().startswith("Creates  ")
     return {"paths": list(paths), "preview": dialog.folder_preview.text(), "status": dialog.status.text(),
-            "width": dialog.width()}
+            "width": dialog.width(), "copying": dialog.running,
+            "import_enabled": dialog.start_button.isEnabled(),
+            "cancel_primary": dialog.cancel_button.objectName() == "primary"}

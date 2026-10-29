@@ -1,6 +1,6 @@
 [project]
 name = "ayikla"
-version = "1.5.0b1"
+version = "1.6.0b1"
 description = "Safe, keyboard-first RAW + JPEG photo culling for Windows"
 requires-python = ">=3.12,<3.13"
 dependencies = ["PySide6==6.12.0", "Pillow==12.3.0"]

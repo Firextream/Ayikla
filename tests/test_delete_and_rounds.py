@@ -100,7 +100,7 @@ def test_round_labels_and_actions_distinguish_keep_from_lightroom_copy(app, wind
     original = make_photo(shoot)
     window.open_folder(shoot)
     wait(app, lambda: not window.busy)
-    assert "Keep" in window.keep_button.text() and "Delete" in window.reject_button.text()
+    assert "Keep" in window.keep_button.text() and window.reject_button.text() == "Reject  ·  ←"
     assert window.counter.text().startswith("Round 1")
     assert "01_secilen" in window.keep_button.toolTip() and "_red" in window.reject_button.toolTip()
     QTest.keyClick(window, Qt.Key.Key_H)

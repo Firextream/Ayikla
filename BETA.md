@@ -1,4 +1,4 @@
-# Ayikla 1.5.0b1 · Photo club beta
+# Ayikla 1.6.0b1 · Photo club beta
 
 Cull JPG/JPEG + RAW shoots or standalone JPEG/TIFF scans in two rounds: choose what to keep, then what to edit in Lightroom. Windows x64. No Python installation required.
 
@@ -14,10 +14,10 @@ This package is unsigned. If Windows prevents it from opening, report the warnin
 
 | Action | Key | Result |
 |---|---|---|
-| Keep | → / Enter | Moves JPG + matching RAW to `01_secilen` |
-| Reject | ← / X / Delete | Moves the pair to `_red`; **not permanent deletion** |
-| Undo | Z | Restores exact original paths; works after reopening too |
-| Navigate without deciding | Space / ↓ / ↑ | Does not move photos |
+| Keep | → / Enter (Browse first: Enter) | Moves JPG + matching RAW to `01_secilen` |
+| Reject | ← / X / Delete (Browse first: X / Delete) | Moves the pair to `_red`; **not permanent deletion** |
+| Undo | Z or the Undo button | Restores exact original paths; works after reopening too |
+| Navigate without deciding | ↑ / ↓ (Browse first: ← / →), Backspace / PageUp, Space / PageDown, or click the photo's left / right third | Does not move photos |
 | Switch to edit picks | M | Choose from your kept photos |
 | Pick / unpick for editing | E | Copies the pair to `02_edit`; unpicking archives the copies |
 | Check focus | F; drag | 100% zoom / pan; F again to fit |
@@ -32,7 +32,25 @@ This package is unsigned. If Windows prevents it from opening, report the warnin
 
 Decisions are saved automatically. **Folders** opens your kept, rejected and edit files. Import `02_edit` into Lightroom yourself. Folder names are unchanged from the Turkish release for compatibility.
 
-Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Retry** to rescan after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
+Keep `_red`, `.ayikla_saklanan` and `ayikla_log.jsonl`. The app does not delete photos or overwrite existing destinations. Press **Rescan folder** after external changes. macOS `._` helper files are ignored. Corrupt JPEGs can still be kept/rejected; encountered decoding failures are listed in the round summary.
+
+## New in 1.6
+
+- **Arrow keys:** the first launch asks: *Fast culling* (→ Keep, ← Reject, ↑/↓
+  previous/next — the default) or *Browse first* (← → previous/next, Enter Keep,
+  X/Delete Reject). Settings → Arrow keys changes it; Help (H) shows the active map.
+- **Back button:** Undo · Z, ← Previous / Next → are real buttons next to Reject /
+  Keep. Clicking the photo's left / right third steps back / forward; double-click
+  zooms. Every Reject shows "Rejected IMG_0001 · Z to undo" for 3 s.
+- **Quieter labels:** Open folder and Rescan folder are words; round 2 says
+  "picked" once; "Picks saved for Yazı" only when the picks file changed.
+- **Burst compare** uses the whole window; each frame fits its pane.
+- **Card import:** readable `E:\…\DCIM\100CANON` paths, the folder name preview,
+  files · size · remaining time, cards with a DCIM folder offered first.
+- **Contact sheet:** shoot name + date, "1 frame", no empty metadata lines, 3 / 4
+  columns, A4 PDF pages that also fit Letter.
+
+Screenshots: `docs/polish-1.6/README.md`.
 
 ## Visual polish in 1.5
 
@@ -100,7 +118,7 @@ Keep two photos, reject one, then press Z. Close and reopen the shoot: do decisi
 
 Open a feedback or bug report at **https://github.com/Firextream/Ayikla/issues**. English and Turkish are welcome.
 
-- App version: **1.5.0b1**, also shown in H help.
+- App version: **1.6.0b1**, also shown in H help.
 - Windows version, display resolution and scaling (100%/125%/150%).
 - Camera, photo count and storage type (internal/external/SD card).
 - What did you do? What did you expect? What happened? Can you reproduce it?

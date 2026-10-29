@@ -124,6 +124,10 @@ def run_smoke(app, window, output: str) -> None:
             if window.busy:
                 return
             if stage == 0:
+                # 1.6: a fresh install asks how the arrow keys work before the start screen
+                assert window.pages.currentWidget() is window.arrow_page
+                window.set_arrow_mode("fast")
+                assert window.pages.currentIndex() == 0 and window.preferences.arrow_keys == "fast"
                 window.open_folder(shoot)
             elif stage == 1:
                 assert window.session and window.current.key == "img_0001"
@@ -449,6 +453,9 @@ def run_smoke(app, window, output: str) -> None:
                 checks.append("1.4 recursive card import with SHA-256, remembered root, duplicate skip after culling and cooperative cancellation")
                 checks.append("1.4 JPEG/PDF contact sheet, collision-safe export and grouped undo")
                 checks.append("1.5 wrapped start cards, single progress counter, two-row footer, image-anchored burst badge and keeper border/number badges")
+                assert window.previous_button.text() == "↑  Previous" and window.undo_button.isVisible()
+                assert "Arrow keys: Fast culling" in window._help_text()
+                checks.append("1.6 first-launch arrow-key choice saved, Undo / Previous / Next buttons, grouped help")
                 finish()
                 return
             stage += 1
