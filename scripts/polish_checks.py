@@ -96,15 +96,20 @@ def check_compare(dialog):
         assert second.x() - first.geometry().right() - 1 == 12
     for button in dialog.buttons:
         assert button.fontMetrics().horizontalAdvance(button.text()) <= button.width() - 12, button.text()
-    for index, (cell, pane, label) in enumerate(zip(dialog.cells, dialog.panes, dialog.labels)):
+    fill = []
+    for index, (cell, pane) in enumerate(zip(dialog.cells, dialog.panes)):
         if not cell.isVisible():
             continue
-        assert label.font().pixelSize() == 13
         assert pane.image_rect().contains(pane.corner_label.geometry().topLeft())
-        assert pane.corner_label.text() == str(index + 1)
+        assert pane.corner_label.text().startswith(f"{index + 1}  ·  ")  # number · file name
         assert cell.frameWidth() == 2
+        # 1.6: the image fits its pane with 16 px margins on the limiting side
+        image = pane.image_rect()
+        assert min(image.left(), image.top()) >= 15.5
+        assert min(pane.width() - image.right(), pane.height() - image.bottom()) <= 16.5
+        fill.append(round(image.width() * image.height() / (cell.width() * cell.height()), 2))
     assert sum(bool(cell.property("selected")) for cell in dialog.cells) == 1
-    return {"selection_border": 2, "number_badges_on_images": True,
+    return {"selection_border": 2, "number_badges_on_images": True, "image_area_of_cell": fill,
             "button_height": dialog.buttons[0].height(), "button_gaps": 12}
 
 

@@ -5,6 +5,9 @@ from PySide6.QtWidgets import QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
 from .widgets import ElidedLabel
 
 from .images import ImageCache
+
+BADGE = "background: #222222; color: #eeeeee; font-size: 13px;border: 1px solid #777777; border-radius: 3px; padding: 2px 6px;"
+KEEPER = "background: #dedede; color: #1a1a1a; font-size: 13px; font-weight: 600;border: 1px solid #dedede; border-radius: 3px; padding: 2px 6px;"
 from .widgets import PhotoCanvas
 
 
@@ -20,30 +23,33 @@ class BurstCompare(QDialog):
         self.zoomed = False
         self.saved = False
         self.setWindowTitle("Burst compare")
-        self.resize(1200, 800)
+        # as large as the main window: the frames are what you compare
+        size = parent.size() if parent is not None else None
+        self.resize(max(1200, size.width()) if size else 1200, max(800, size.height()) if size else 800)
         self.setMinimumSize(800, 550)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 12, 16, 16)
+        layout.setSpacing(10)
         self.heading = QLabel()
         layout.addWidget(self.heading)
         grid = QGridLayout()
-        grid.setSpacing(12)
+        grid.setSpacing(8)
         layout.addLayout(grid, 1)
         self.panes, self.labels, self.caches, self.cells = [], [], [], []
         for index in range(self.page_size):
             cell = QFrame()
             cell.setObjectName("compareCell")
             column = QVBoxLayout(cell)
-            column.setContentsMargins(12, 10, 12, 10)
-            column.setSpacing(6)
+            column.setContentsMargins(2, 2, 2, 2)
+            column.setSpacing(0)
+            # the file name rides in the number badge on the image corner; no row above the image
             name = ElidedLabel()
             name.setStyleSheet("font-size: 13px; padding: 0;")
+            name.hide()
             canvas = PhotoCanvas()
             canvas.corner_label = QLabel(str(index + 1), canvas)
             canvas.corner_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
-            canvas.corner_label.setStyleSheet("background: #222222; color: #eeeeee; font-size: 12px;"
-                                              "border: 1px solid #777777; border-radius: 3px; padding: 2px 6px;")
+            canvas.corner_label.setStyleSheet(BADGE)
             canvas.corner_label.adjustSize()
             cache = ImageCache(self, byte_limit=96 * 1024 * 1024)
             cache.loaded.connect(lambda path, image, error, pane=canvas: self.loaded(pane, image, error))
@@ -67,6 +73,7 @@ class BurstCompare(QDialog):
             control = QPushButton(text)
             control.setFocusPolicy(Qt.FocusPolicy.NoFocus)
             control.setFixedHeight(34)
+            control.setStyleSheet("font-size: 13px;")
             control.clicked.connect(callback)
             controls.addWidget(control, 1)
             self.buttons.append(control)
@@ -84,8 +91,8 @@ class BurstCompare(QDialog):
     def render_page(self):
         pages = (len(self.photos) + self.page_size - 1) // self.page_size
         self.heading.setWordWrap(True)
-        self.heading.setText(f"Burst · {len(self.photos)} frames · Page {self.page + 1}/{pages}"
-                             "   |   1–4 select · F zoom · Drag pans all · Shift+Enter keeps selected / rejects others")
+        self.heading.setText(f"Burst · {len(self.photos)} frames · Page {self.page + 1}/{pages}   |   "
+                             "1–4 pick · Shift+Enter keep this, reject others · Esc back")
         for i, (cell, name, canvas) in enumerate(zip(self.cells, self.labels, self.panes)):
             canvas.set_zoom(self.zoomed)
             position = self.page * self.page_size + i
@@ -94,6 +101,11 @@ class BurstCompare(QDialog):
                 photo = self.photos[position]
                 chosen = photo.key == self.selected
                 name.setText(photo.jpeg.name + ("  · Keeper" if chosen else ""))
+                badge = canvas.corner_label
+                badge.setText(f"{i + 1}  ·  {photo.jpeg.name}" + ("  ·  Keeper" if chosen else ""))
+                badge.setStyleSheet(KEEPER if chosen else BADGE)
+                badge.adjustSize()
+                canvas.position_overlays()
                 cell.setProperty("selected", chosen)
                 cell.style().unpolish(cell)
                 cell.style().polish(cell)
