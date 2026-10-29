@@ -1,8 +1,8 @@
 """Geometry and contrast assertions used at native Windows DPI and in pytest."""
 
-from PySide6.QtCore import QRect
+from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QLabel
+from PySide6.QtWidgets import QLabel, QPushButton
 
 
 def contrast(first, second):
@@ -36,8 +36,14 @@ def check_start(window):
     return {**check_header(window), "cards": sizes}
 
 
+def row_span(window, widget):
+    """Left / right edge of a photo control in the decision row's coordinates."""
+    left = widget.mapTo(window.controls, QPoint(0, 0)).x()
+    return left, left + widget.width() - 1
+
+
 def check_gallery(window):
-    assert window.photo_info.parentWidget() is window.controls
+    assert window.controls.isAncestorOf(window.photo_info)
     assert window.controls.height() <= 54
     ordered = [window.filename, window.raw_badge]
     if window.edit_badge.isVisible():
@@ -45,7 +51,16 @@ def check_gallery(window):
     ordered += [window.current_folder_button, window.info_button, window.strip_button, window.zoom_button]
     for first, second in zip(ordered, ordered[1:]):
         assert first.geometry().right() < second.geometry().left(), (first.text(), second.text())
-    assert window.photo_info.geometry().right() < window.previous_button.geometry().left()
+    # 1.6: Undo · file info | ← Previous / Next → | Reject / Keep, all the decision buttons' height
+    row = [window.undo_button, window.photo_info, window.previous_button, window.next_button]
+    row += [window.reject_button, window.keep_button] if window.keep_button.isVisible() else [window.mark_button]
+    for first, second in zip(row, row[1:]):
+        assert row_span(window, first)[1] < row_span(window, second)[0], (first, second)
+    decision = window.keep_button if window.keep_button.isVisible() else window.mark_button
+    for button in (window.undo_button, window.previous_button, window.next_button):
+        assert button.height() == decision.height(), (button.text(), button.height(), decision.height())
+    middle = (row_span(window, window.previous_button)[0] + row_span(window, window.next_button)[1]) / 2
+    centred = abs(middle - window.controls.width() / 2)
     assert window.counter.fontMetrics().horizontalAdvance(window.counter.text()) <= window.counter.width(), window.counter.text()
     progress_labels = [item for item in window.findChildren(QLabel)
                        if item.isVisible() and item.text().startswith(("Round 1 ·", "Round 2 ·"))]
@@ -71,7 +86,7 @@ def check_gallery(window):
         button.setEnabled(enabled)
         assert value >= 3, (button.text(), fg.name(), bg.name(), value)
         ratios.append(round(value, 2))
-    return {**check_header(window), "control_row_height": window.controls.height(),
+    return {**check_header(window), "control_row_height": window.controls.height(), "nav_offset_from_centre": centred,
             "single_counter": True, "disabled_contrast": ratios, "photo_height": window.canvas.height()}
 
 
@@ -100,3 +115,17 @@ def check_summary(window):
         if label.isVisible():
             assert label.fontMetrics().horizontalAdvance(label.text().split("\n")[0]) <= label.width()
     return {**check_header(window), "photo_controls_hidden": True, "summary_width": window.end_card.width()}
+
+
+def check_keys(window):
+    """First-launch arrow-key chooser: both cards whole, nothing clipped."""
+    assert window.pages.currentWidget() is window.arrow_page
+    cards = []
+    for mode, card in window.arrow_cards.items():
+        for item in card.findChildren(QLabel) + card.findChildren(QPushButton):
+            text = item.text().split("\n")
+            assert all(item.fontMetrics().horizontalAdvance(line) <= item.contentsRect().width() for line in text), item.text()
+            assert card.rect().contains(item.geometry()), item.text()
+        cards.append({"mode": mode, "height": card.height()})
+    assert len({card["height"] for card in cards}) == 1, cards
+    return {**check_header(window), "cards": cards}

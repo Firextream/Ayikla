@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QObject, QPoint, QRunnable, QRect, QSize, Qt, QThreadPool, QTimer, QUrl, Signal
-from PySide6.QtGui import QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
+from PySide6.QtGui import QActionGroup, QColor, QDesktopServices, QIcon, QImage, QKeyEvent, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox, QFileDialog, QFrame, QHBoxLayout, QLabel, QLayout, QMainWindow, QMessageBox,
     QMenu, QPlainTextEdit, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget,
@@ -66,6 +66,12 @@ QPushButton#reject:hover { background: #302929; border-color: #b58282; }
 QPushButton#reject:pressed { background: #382c2c; border-color: #b58282; }
 QPushButton#keep:disabled, QPushButton#reject:disabled, QPushButton#primary:disabled {
     background: #292929; color: #818181; border: 2px solid #333333; }
+QPushButton#nav { background: #262626; color: #cccccc; border: 2px solid #3a3a3a; min-width: 72px; }
+QPushButton#nav:hover { background: #303030; border-color: #666666; color: #eeeeee; }
+QPushButton#nav:pressed { background: #3a3a3a; }
+QPushButton#nav:disabled { background: #222222; color: #7d7d7d; border: 2px solid #2e2e2e; }
+QFrame#choiceCard { background: #202020; border: 1px solid #333333; border-radius: 12px; }
+QLabel#keys { font-size: 15px; color: #dddddd; }
 QScrollBar:horizontal { background: #252525; height: 8px; margin: 0; }
 QScrollBar::handle:horizontal { background: #555555; min-width: 28px; border-radius: 3px; }
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
@@ -84,6 +90,15 @@ QMenu::separator { background: #3a3a3a; height: 1px; margin: 4px 8px; }
 QToolTip { color: #dddddd; background: #383838; border: 1px solid #777777; padding: 6px; }
 QMessageBox { background: #202020; }
 """
+
+
+# The two arrow-key maps (Preferences.arrow_keys; chosen on first launch, Settings → Arrow keys).
+ARROW_MODES = {
+    "fast": {"name": "Fast culling", "keep": "→ / Enter", "reject": "← / X / Delete", "previous": "↑", "next": "↓",
+             "cards": ("→   Keep", "←   Reject", "↑ ↓   Previous / next")},
+    "browse": {"name": "Browse first", "keep": "Enter", "reject": "X / Delete", "previous": "←", "next": "→",
+               "cards": ("← →   Previous / next", "Enter   Keep", "X / Delete   Reject")},
+}
 
 
 def app_icon() -> QIcon:
@@ -113,6 +128,19 @@ def button(text: str, callback, name: str = "") -> QPushButton:
     result.setFocusPolicy(Qt.FocusPolicy.NoFocus)
     result.clicked.connect(callback)
     return result
+
+
+class RowSide(QWidget):
+    """One side of the decision row. Both sides report the wider side's natural width, so with
+    equal stretch they stay equally wide and Previous / Next sit in the middle; their minimum
+    sizes still keep every control whole in a narrow window."""
+
+    partner: "RowSide | None" = None
+
+    def sizeHint(self):
+        own = super().sizeHint()
+        other = QWidget.sizeHint(self.partner) if self.partner is not None else own
+        return QSize(max(own.width(), other.width()), own.height())
 
 
 class OperationSignals(QObject):
@@ -169,6 +197,9 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(1024, 680)
         self.setStyleSheet(STYLE)
         self._build_ui()
+        self._apply_arrow_mode()
+        if self.preferences.arrow_keys is None:
+            self.pages.setCurrentWidget(self.arrow_page)
         if self.preferences.read_error:
             self.feedback.setText("Recent folders and window settings could not be read. Use Open folder to continue; "
                                   "check read permission for the app folder.")
@@ -227,6 +258,15 @@ class MainWindow(QMainWindow):
         self.xmp_action.setCheckable(True)
         self.xmp_action.setChecked(self.preferences.write_xmp)
         self.xmp_action.triggered.connect(self._set_xmp)
+        arrow_menu = settings_menu.addMenu("Arrow keys")
+        arrow_group = QActionGroup(self)
+        self.arrow_actions = {}
+        for mode, values in ARROW_MODES.items():
+            action = arrow_menu.addAction(f"{values['name']}  ·  {' · '.join(values['cards'][:2])}")
+            action.setCheckable(True)
+            arrow_group.addAction(action)
+            action.triggered.connect(lambda checked=False, value=mode: self.set_arrow_mode(value))
+            self.arrow_actions[mode] = action
         settings_menu.addSeparator()
         self.import_action = settings_menu.addAction("Import from card… · Ctrl+I")
         self.import_action.triggered.connect(self.choose_import)
@@ -319,6 +359,9 @@ class MainWindow(QMainWindow):
         toolbar.addWidget(self.counter)
         content.addLayout(toolbar)
         self.canvas = PhotoCanvas()
+        self.canvas.click_zones = True
+        self.canvas.stepped.connect(self.navigate)
+        self.canvas.zoom_requested.connect(self.toggle_zoom)
         self.viewer = QStackedWidget()
         self.viewer.addWidget(self.canvas)
         end_page = QScrollArea()
@@ -365,6 +408,8 @@ class MainWindow(QMainWindow):
         folder_links.addWidget(self.kept_folder_button)
         folder_links.addWidget(self.rejected_folder_button)
         end_layout.addLayout(folder_links)
+        self.end_undo_button = button("Undo the last decision  ·  Z", self.undo, "ghost")
+        end_layout.addWidget(self.end_undo_button)
         end_layout.addWidget(button("Back to photos", self.return_to_photos, "ghost"))
         end_note = label("Decisions saved. Press Z to undo the last one.", "muted")
         end_note.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -414,37 +459,47 @@ class MainWindow(QMainWindow):
         for control in (self.current_folder_button, self.zoom_button, self.info_button, self.strip_button):
             control.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
         info.addStretch(1)
-        actions.addWidget(self.photo_info, 1)
-        self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
-        self.reject_button.setToolTip("Moves the photo + matching RAW to _red. Z to undo; no files are deleted.")
-        self.previous_button = button("↑", lambda: self.navigate(-1), "ghost")
+        # Undo + file info (left) · Previous / Next (middle) · decisions (right), see RowSide.
+        self.undo_button = button("Undo  ·  Z", self.undo, "nav")
+        self.undo_button.setToolTip("Undo the last decision · Z · also after a restart")
+        self.left_controls, self.right_controls = RowSide(), RowSide()
+        self.left_controls.partner, self.right_controls.partner = self.right_controls, self.left_controls
+        left = QHBoxLayout(self.left_controls)
+        left.setContentsMargins(0, 0, 0, 0)
+        left.setSpacing(12)
+        left.addWidget(self.undo_button)
+        left.addWidget(self.photo_info, 1)
+        actions.addWidget(self.left_controls, 1)
+        self.previous_button = button("", lambda: self.navigate(-1), "nav")
         self.previous_button.setAccessibleName("Previous photo")
-        self.previous_button.setToolTip("Previous photo · ↑")
-        self.next_button = button("↓", lambda: self.navigate(1), "ghost")
+        self.next_button = button("", lambda: self.navigate(1), "nav")
         self.next_button.setAccessibleName("Next photo")
-        self.next_button.setToolTip("Next photo without deciding · Space / ↓")
         actions.addWidget(self.previous_button)
         actions.addWidget(self.next_button)
-        actions.addWidget(self.reject_button)
+        right = QHBoxLayout(self.right_controls)
+        right.setContentsMargins(0, 0, 0, 0)
+        right.setSpacing(8)
+        right.addStretch(1)
+        self.reject_button = button("Reject  ·  Delete", lambda: self.decide(False), "reject")
+        right.addWidget(self.reject_button)
         self.keep_button = button("Keep  ·  →", lambda: self.decide(True), "keep")
-        self.keep_button.setToolTip("Keep · → / Enter · moves photo + matching RAW to 01_secilen")
-        actions.addWidget(self.keep_button)
+        right.addWidget(self.keep_button)
         self.mark_button = button("Edit pick  ·  E", self.toggle_edit, "keep")
         self.mark_button.setToolTip("Copies the photo + matching RAW to 02_edit for Lightroom.")
-        actions.addWidget(self.mark_button)
+        right.addWidget(self.mark_button)
         self.summary_button = button("Summary", self.show_summary, "ghost")
         self.summary_button.setToolTip("Round 2 summary")
-        actions.addWidget(self.summary_button)
+        right.addWidget(self.summary_button)
+        actions.addWidget(self.right_controls, 1)
         content.addWidget(controls)
         self.pages.addWidget(gallery)
+        self.pages.addWidget(self._build_arrow_page())
 
         self.status_row = QFrame()
         self.status_row.setObjectName("statusRow")
         footer = QHBoxLayout(self.status_row)
         footer.setContentsMargins(0, 0, 0, 0)
         footer.setSpacing(10)
-        self.undo_button = button("Undo  ·  Z", self.undo, "ghost")
-        footer.addWidget(self.undo_button)
         self.start_first_button = button("Start from first", self.start_from_first, "ghost")
         self.start_first_button.hide()
         footer.addWidget(self.start_first_button)
@@ -461,6 +516,96 @@ class MainWindow(QMainWindow):
         self.toast = FadingOverlay(root)
         self.canvas.help.setParent(root)
         self.canvas.help.hide()
+
+    def _build_arrow_page(self):
+        """First launch: one screen to choose how the arrow keys work (1 / 2 / Enter, or click)."""
+        self.arrow_page = QScrollArea()
+        self.arrow_page.setFrameShape(QFrame.Shape.NoFrame)
+        self.arrow_page.setWidgetResizable(True)
+        body = QWidget()
+        outer = QVBoxLayout(body)
+        outer.setSizeConstraint(QLayout.SizeConstraint.SetMinAndMaxSize)
+        outer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        content = QWidget()
+        content.setMaximumWidth(740)
+        column = QVBoxLayout(content)
+        column.setContentsMargins(0, 12, 0, 12)
+        column.setSpacing(16)
+        column.addWidget(label("BEFORE YOU START", "eyebrow"))
+        column.addWidget(label("How do you want to use the arrow keys?", "hero"))
+        hint = label("Choose one. You can change it any time in Settings → Arrow keys.", "muted")
+        hint.setWordWrap(True)
+        column.addWidget(hint)
+        cards = QHBoxLayout()
+        cards.setSpacing(12)
+        self.arrow_cards = {}
+        for number, (mode, values) in enumerate(ARROW_MODES.items(), 1):
+            card = QFrame()
+            card.setObjectName("choiceCard")
+            card_layout = QVBoxLayout(card)
+            card_layout.setContentsMargins(18, 14, 18, 16)
+            card_layout.setSpacing(8)
+            card_layout.addWidget(label(f"0{number}", "stepNumber"))
+            card_layout.addWidget(label(values["name"] + ("  ·  default" if mode == "fast" else ""), "stepTitle"))
+            card_layout.addWidget(label("\n".join(values["cards"]), "keys"))
+            choose = button(f"Use {values['name'].lower()}  ·  {number}",
+                            lambda checked=False, value=mode: self.set_arrow_mode(value),
+                            "primary" if mode == "fast" else "")
+            choose.setMinimumHeight(44)
+            card_layout.addSpacing(6)
+            card_layout.addWidget(choose)
+            card.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Maximum)
+            self.arrow_cards[mode] = card
+            cards.addWidget(card, 1)
+        column.addLayout(cards)
+        both = label("Both: Backspace / PageUp previous · Space / PageDown next · Z undo · "
+                     "a short notice after every Reject", "muted")
+        both.setWordWrap(True)
+        column.addWidget(both)
+        outer.addWidget(content)
+        self.arrow_page.setWidget(body)
+        return self.arrow_page
+
+    @property
+    def arrow_mode(self) -> str:
+        return self.preferences.arrow_keys or "fast"
+
+    def set_arrow_mode(self, mode: str):
+        try:
+            self.preferences.set_arrow_keys(mode)
+        except OSError:
+            self.preferences.arrow_keys = mode  # this session only
+            self.feedback.setText("Arrow-key setting could not be saved. Check write permission for the app folder.")
+        self._apply_arrow_mode()
+        if self.pages.currentWidget() is self.arrow_page:
+            self.pages.setCurrentIndex(1 if self.session else 0)
+        self.notify(f"Arrow keys · {ARROW_MODES[mode]['name']}")
+
+    def _apply_arrow_mode(self):
+        keys = ARROW_MODES[self.arrow_mode]
+        browse = self.arrow_mode == "browse"
+        # the labels name the active keys: in Fast culling ← rejects, so Previous shows ↑
+        self.previous_button.setText(f"{keys['previous']}  Previous")
+        self.next_button.setText(f"Next  {keys['next']}")
+        self.previous_button.setToolTip(f"Previous photo · {keys['previous']} / Backspace / PageUp")
+        self.next_button.setToolTip(f"Next photo without deciding · {keys['next']} / Space / PageDown")
+        self.keep_button.setText("Keep  ·  Enter" if browse else "Keep  ·  →")
+        self.keep_button.setToolTip(f"Keep · {keys['keep']} · moves photo + matching RAW to 01_secilen")
+        self.reject_button.setToolTip(f"Reject · {keys['reject']} · moves the photo + matching RAW to _red. "
+                                      "Z to undo; no files are deleted.")
+        for mode, action in self.arrow_actions.items():
+            action.setChecked(mode == self.arrow_mode)
+        if self.canvas.help.isVisible():
+            self.canvas.help.reveal(self._help_text(), auto_fade=False)
+            self.canvas.position_overlays()
+
+    def _key_map(self):
+        browse = self.arrow_mode == "browse"
+        K = Qt.Key
+        return {"previous": (K.Key_Up, K.Key_Backspace, K.Key_PageUp) + ((K.Key_Left,) if browse else ()),
+                "next": (K.Key_Down, K.Key_Space, K.Key_PageDown) + ((K.Key_Right,) if browse else ()),
+                "keep": (K.Key_Return, K.Key_Enter) + (() if browse else (K.Key_Right,)),
+                "reject": (K.Key_X, K.Key_Delete) + (() if browse else (K.Key_Left,))}
 
     def _update_recent(self):
         while self.recent_layout.count():
@@ -552,10 +697,11 @@ class MainWindow(QMainWindow):
                                   f"{result.copied} verified copies · {result.skipped} skipped")
         QTimer.singleShot(0, open_result)
 
-    def _run(self, operation, message: str, success: str, opening=False, decision_count=0):
+    def _run(self, operation, message: str, success: str, opening=False, decision_count=0, toast_ms=1500):
         if self.busy:
             return
         self.busy = True
+        self._toast_ms = toast_ms
         self._decision_count = decision_count
         self._success = success
         self.feedback.setText(message)
@@ -625,7 +771,7 @@ class MainWindow(QMainWindow):
             self._show_error(error)
             return
         self.feedback.setText(self._success)
-        self.notify(self._success)
+        self.notify(self._success, self._toast_ms)
         self.preview_photo = None
         self.summary_requested = _result == "picks_refreshed" or (isinstance(_result, dict) and "contact_sheet" in _result)
         self.zoomed = False
@@ -784,7 +930,9 @@ class MainWindow(QMainWindow):
             control.setEnabled(enabled)
         self.previous_button.setEnabled(has_photo and self.index > 0)
         self.next_button.setEnabled(has_photo and self.index + 1 < len(self.photos))
+        self.canvas.can_step = (self.previous_button.isEnabled(), self.next_button.isEnabled())
         self.undo_button.setEnabled(enabled and bool(self.session.stack))
+        self.end_undo_button.setEnabled(self.undo_button.isEnabled())
         self.open_button.setEnabled(not self.busy and not bool(self.session and self.session.pending_id))
         self.retry_button.setVisible(self.session is not None)
         self.retry_button.setEnabled(not self.busy and not bool(self.session and self.session.faulted))
@@ -792,6 +940,8 @@ class MainWindow(QMainWindow):
         self.reject_button.setVisible(self.mode == "cull")
         self.mark_button.setVisible(self.mode == "edit")
         self.summary_button.setVisible(self.mode == "edit")
+        for side in (self.left_controls, self.right_controls):
+            side.updateGeometry()  # each side's width hint follows the other side
         self.summary_button.setEnabled(enabled)
         self.contact_sheet_button.setVisible(self.mode == "edit")
         self.contact_pdf.setVisible(self.mode == "edit")
@@ -844,7 +994,8 @@ class MainWindow(QMainWindow):
         remaining.pop(self.index)
         next_key = remaining[min(self.index, len(remaining) - 1)].key if remaining else None
         self._run(lambda: self.session.decide(photo, keep, next_key), "Moving files…",
-                  "Kept" if keep else "Rejected", decision_count=1)
+                  "Kept" if keep else f"Rejected {photo.jpeg.stem} · Z to undo", decision_count=1,
+                  toast_ms=1500 if keep else 3000)
 
     def toggle_edit(self):
         if not self.current or self.mode != "edit" or not self.session or self.preview_photo:
@@ -863,8 +1014,8 @@ class MainWindow(QMainWindow):
             self._needs_metadata_rescan = True
             self._run(self.session.recover_pending, "Checking folder and interrupted operation…", "Folder refreshed")
 
-    def notify(self, message):
-        self.toast.reveal(message)
+    def notify(self, message, duration=1500):
+        self.toast.reveal(message, duration=duration)
         self._position_toast()
 
     def _position_toast(self):
@@ -939,16 +1090,28 @@ class MainWindow(QMainWindow):
         if self.canvas.help.isVisible():
             self.canvas.help.dismiss()
         else:
-            self.canvas.help.reveal(f"KEYBOARD · AYIKLA {__version__} · BETA\n\nROUND 1 · KEEP OR REJECT\n→ / Enter   Keep → 01_secilen\n"
-                                    "← / X / Delete   Reject → _red (no files deleted)\n\n"
-                                    "ROUND 2 · EDIT / LIGHTROOM\nE   copy to 02_edit / remove edit pick\n\n"
-                                    "Decisions are saved automatically.\n"
-                                    "Space / ↓   Next     ↑   Previous\nZ   Undo     M   Switch round\n"
-                                    "F   100% / Fit     Drag   Pan\nI   Photo info     T   Filmstrip     C   Color ideas (round 2)\n"
-                                    "B   Burst compare · 1–4 select · Shift+Enter keep selected / reject others\n"
-                                    "H / ?   Help     Esc   Close help / leave zoom\nF11   Full screen     Ctrl+O   Open folder     Ctrl+I   Import from card",
-                                    auto_fade=False)
+            self.canvas.help.reveal(self._help_text(), auto_fade=False)
             self.canvas.position_overlays()
+
+    def _help_text(self):
+        keys = ARROW_MODES[self.arrow_mode]
+        return (f"KEYBOARD · AYIKLA {__version__} · BETA\n"
+                f"Arrow keys: {keys['name']}  ·  change in Settings → Arrow keys\n\n"
+                "ROUND 1 · KEEP OR REJECT\n"
+                f"{keys['keep']}   Keep → 01_secilen\n"
+                f"{keys['reject']}   Reject → _red (no files deleted)\n"
+                "B   Burst compare · 1–4 pick · Shift+Enter keep this, reject others\n\n"
+                "ROUND 2 · EDIT / LIGHTROOM\n"
+                "E   copy to 02_edit / remove edit pick\n"
+                "C   Color ideas     Ctrl+Shift+E   Contact sheet (in the summary)\n\n"
+                "ANYWHERE\n"
+                f"{keys['previous']} / Backspace / PageUp   Previous     {keys['next']} / Space / PageDown   Next\n"
+                "Click the photo's left / right third   Previous / next     Double-click   100% / Fit\n"
+                "Z   Undo, also after a restart     M   Switch round\n"
+                "F   100% / Fit     Drag   Pan     I   Photo info     T   Filmstrip\n"
+                "H / ?   Help     Esc   Close help / leave zoom     F11   Full screen\n"
+                "Ctrl+O   Open folder     Ctrl+I   Import from card\n\n"
+                "Decisions are saved automatically.")
 
     def toggle_filmstrip(self):
         self.filmstrip.setVisible(not self.filmstrip.isVisible())
@@ -1068,6 +1231,13 @@ class MainWindow(QMainWindow):
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
+        if self.pages.currentWidget() is self.arrow_page and not event.isAutoRepeat():
+            choice = {Qt.Key.Key_1: "fast", Qt.Key.Key_2: "browse",
+                      Qt.Key.Key_Return: "fast", Qt.Key.Key_Enter: "fast"}.get(key)
+            if choice:
+                self.set_arrow_mode(choice)
+                return
+        keys = self._key_map()
         if key == Qt.Key.Key_F11:
             self.toggle_fullscreen()
         elif key == Qt.Key.Key_Escape:
@@ -1102,11 +1272,13 @@ class MainWindow(QMainWindow):
             self.open_compare()
         elif key == Qt.Key.Key_T:
             self.toggle_filmstrip()
-        elif key in (Qt.Key.Key_Up, Qt.Key.Key_Down, Qt.Key.Key_Space):
-            self.navigate(-1 if key == Qt.Key.Key_Up else 1)
-        elif self.mode == "cull" and key in (Qt.Key.Key_Right, Qt.Key.Key_Return, Qt.Key.Key_Enter):
+        elif key in keys["previous"]:
+            self.navigate(-1)
+        elif key in keys["next"]:
+            self.navigate(1)
+        elif self.mode == "cull" and key in keys["keep"]:
             self.decide(True)
-        elif self.mode == "cull" and key in (Qt.Key.Key_Left, Qt.Key.Key_X, Qt.Key.Key_Delete):
+        elif self.mode == "cull" and key in keys["reject"]:
             self.decide(False)
         elif self.mode == "edit" and key == Qt.Key.Key_E:
             self.toggle_edit()

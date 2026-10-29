@@ -5,6 +5,11 @@ import os
 import sys
 from pathlib import Path
 
+# How the arrow keys work: chosen once on first launch, changeable in Settings → Arrow keys.
+#   fast:   → Keep, ← Reject, ↑/↓ previous/next (the original map, and the default)
+#   browse: ← → previous/next, Enter Keep, X/Delete Reject
+ARROW_KEY_MODES = ("fast", "browse")
+
 
 class Preferences:
     def __init__(self, directory: str | Path | None = None):
@@ -15,6 +20,7 @@ class Preferences:
         self.window: dict = {}
         self.write_xmp = True
         self.import_destination = ""
+        self.arrow_keys: str | None = None  # None until chosen on the first-launch screen
         self.read_error = False
         try:
             data = self.path.read_bytes()
@@ -49,9 +55,16 @@ class Preferences:
             self.write_xmp = record["enabled"]
         elif record.get("type") == "import_destination" and isinstance(record.get("path"), str):
             self.import_destination = record["path"]
+        elif record.get("type") == "arrow_keys" and record.get("mode") in ARROW_KEY_MODES:
+            self.arrow_keys = record["mode"]
 
     def set_import_destination(self, path):
         self._append({"type": "import_destination", "path": str(Path(path).resolve())})
+
+    def set_arrow_keys(self, mode: str):
+        if mode not in ARROW_KEY_MODES:
+            raise ValueError(mode)
+        self._append({"type": "arrow_keys", "mode": mode})
 
     def set_xmp(self, enabled: bool):
         self._append({"type": "xmp", "enabled": bool(enabled)})

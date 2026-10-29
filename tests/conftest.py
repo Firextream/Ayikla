@@ -9,7 +9,12 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 @pytest.fixture(autouse=True)
 def isolated_preferences(tmp_path, monkeypatch):
-    monkeypatch.setenv("AYIKLA_STATE_DIR", str(tmp_path / "preferences"))
+    # A user who has already chosen the arrow keys (Fast culling). First-launch tests point
+    # AYIKLA_STATE_DIR at an empty folder instead.
+    state = tmp_path / "preferences"
+    state.mkdir()
+    (state / "ayikla_settings.jsonl").write_text('{"v": 1, "type": "arrow_keys", "mode": "fast"}\n', "utf-8")
+    monkeypatch.setenv("AYIKLA_STATE_DIR", str(state))
 
 
 @pytest.fixture

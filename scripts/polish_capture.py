@@ -82,6 +82,10 @@ def capture(output, scale, check=False):
         report["screens"]["contact"] = {"pixels": [image.width(), image.height()], "source": sheet.name}
 
     try:
+        if hasattr(window, "arrow_page"):  # 1.6: first launch asks how the arrow keys work
+            snap("keys")
+            window.set_arrow_mode("fast")
+            window.toast.dismiss()
         snap("start")
         shoot = fixture / "Autumn walk"
         shoot.mkdir()

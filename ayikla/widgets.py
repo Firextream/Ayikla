@@ -52,7 +52,7 @@ class FadingOverlay(QLabel):
         self.animation.setDuration(180)
         self.hide()
 
-    def reveal(self, text=None, auto_fade=True):
+    def reveal(self, text=None, auto_fade=True, duration=1500):
         if text is not None:
             self.setText(text)
         self.adjustSize()
@@ -61,7 +61,7 @@ class FadingOverlay(QLabel):
         self.show()
         self.raise_()
         if auto_fade:
-            self.timer.start()
+            self.timer.start(duration)
 
     def fade(self):
         self.animation.setStartValue(self.effect.opacity())
@@ -78,6 +78,8 @@ class PhotoCanvas(QWidget):
     resized = Signal()
     activity = Signal()
     panned = Signal(object)
+    stepped = Signal(int)  # click zones: -1 previous, +1 next
+    zoom_requested = Signal()  # double-click
 
     def __init__(self):
         super().__init__()
@@ -86,6 +88,10 @@ class PhotoCanvas(QWidget):
         self.zoomed = False
         self.pan = QPointF()
         self._drag = None
+        # The main viewer turns these on: the photo's left / right third steps back / forward.
+        self.click_zones = False
+        self.can_step = (False, False)
+        self._hover = 0
         self.hud = FadingOverlay(self)
         self.info = FadingOverlay(self, fade_to=.25)
         self.help = FadingOverlay(self, fade_to=1.0)
@@ -98,7 +104,26 @@ class PhotoCanvas(QWidget):
         self.zoomed = enabled
         self.pan = QPointF()
         self._drag = None
+        self._hover = 0
         self.setCursor(Qt.CursorShape.OpenHandCursor if enabled else Qt.CursorShape.ArrowCursor)
+
+    def zone_at(self, x):
+        """-1 / +1 for the left / right third of the photo (and the margin beside it), else 0."""
+        if not self.click_zones or self.zoomed or self.image.isNull():
+            return 0
+        photo = self.image_rect()
+        if x < photo.left() + photo.width() / 3:
+            return -1 if self.can_step[0] else 0
+        if x > photo.right() - photo.width() / 3:
+            return 1 if self.can_step[1] else 0
+        return 0
+
+    def _set_hover(self, zone):
+        if zone != self._hover:
+            self._hover = zone
+            if not self.zoomed:
+                self.setCursor(Qt.CursorShape.PointingHandCursor if zone else Qt.CursorShape.ArrowCursor)
+            self.update()
 
     def _clamp_pan(self):
         ratio = self.devicePixelRatioF()
@@ -132,6 +157,8 @@ class PhotoCanvas(QWidget):
             else:
                 painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
             painter.drawImage(self.image_rect(), self.image)
+            if self._hover:
+                self._paint_step_hint(painter)
         else:
             painter.setPen(QColor("#aaaaaa"))
             font = QFont("Segoe UI")
@@ -139,6 +166,19 @@ class PhotoCanvas(QWidget):
             painter.setFont(font)
             painter.drawText(self.rect().adjusted(30, 30, -30, -30),
                              Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.message)
+
+    def _paint_step_hint(self, painter):
+        # a quiet chevron inside the hovered edge of the photo
+        photo = self.image_rect()
+        center = QPointF(photo.left() + 34 if self._hover < 0 else photo.right() - 34, photo.center().y())
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor(26, 26, 26, 170))
+        painter.drawEllipse(center, 20, 20)
+        painter.setPen(QPen(QColor("#dddddd"), 2.5, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap))
+        dx = -4 if self._hover < 0 else 4
+        painter.drawLine(QPointF(center.x() - dx, center.y() - 8), QPointF(center.x() + dx, center.y()))
+        painter.drawLine(QPointF(center.x() + dx, center.y()), QPointF(center.x() - dx, center.y() + 8))
 
     def position_overlays(self):
         visible = self.image_rect().intersected(QRectF(self.rect().adjusted(16, 16, -16, -16)))
@@ -163,7 +203,19 @@ class PhotoCanvas(QWidget):
         if self.zoomed and event.button() == Qt.MouseButton.LeftButton:
             self._drag = event.position()
             self.setCursor(Qt.CursorShape.ClosedHandCursor)
+        elif event.button() == Qt.MouseButton.LeftButton and (zone := self.zone_at(event.position().x())):
+            self.stepped.emit(zone)
         self.activity.emit()
+
+    def mouseDoubleClickEvent(self, event):
+        # Double-click = F: in the photo's middle third, or anywhere while zoomed. On the side
+        # thirds the second click is just another step, as two single clicks would be.
+        if (event.button() == Qt.MouseButton.LeftButton and self.click_zones and not self.image.isNull()
+                and not self.zone_at(event.position().x())):
+            self._drag = None
+            self.zoom_requested.emit()
+        else:
+            self.mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self._drag is not None and event.buttons() & Qt.MouseButton.LeftButton:
@@ -173,7 +225,13 @@ class PhotoCanvas(QWidget):
             self.position_overlays()
             self.panned.emit(self.pan)
             self.update()
+        else:
+            self._set_hover(self.zone_at(event.position().x()))
         self.activity.emit()
+
+    def leaveEvent(self, event):
+        self._set_hover(0)
+        super().leaveEvent(event)
 
     def mouseReleaseEvent(self, event):
         self._drag = None
